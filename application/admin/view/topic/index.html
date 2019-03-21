@@ -1,0 +1,168 @@
+{extend name="common/base"/}
+{block name="link"}
+<link href="__STATIC__/css/plugins/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+{/block}
+{block name="style"}
+<style>
+    #advanced-search-box .form-group{
+        margin-top: 10px;
+        margin-bottom: 0;
+    }
+</style>
+{/block}
+{block name="body"}
+
+<div class="wrapper wrapper-content animated fadeInRight">
+    <div class="row">
+        <div class="col-sm-4">
+
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="example-wrap">
+                <div class="example">
+                    <div class="">
+                        <div class="ibox-title" style="">
+                            <h5>{$cateInfo.title}</h5>
+                        </div>
+                        <div class="ibox-content">
+                            <div id="toolbar" class="btn-group">
+                                <button type="button" class="btn btn-outline btn-default" title="返回分类列表" style="margin-right: 1px;border-radius: 3px;" onclick="goBack()">
+                                    <i class="glyphicon glyphicon-chevron-left" aria-hidden="true"></i>
+                                    <span>返回分类</span>
+                                </button>
+                                <button type="button" class="btn btn-outline btn-default" title="导入分类题目" style="margin-right: 1px;margin-left: 0px;border-radius: 3px;">
+                                    <i class="glyphicon glyphicon-open" aria-hidden="true"></i>
+                                    <span>导入</span>
+                                </button>
+                                <button type="button" class="btn btn-outline btn-default" title="添加分类题目" style="margin-right: 1px;margin-left: 0px;border-radius: 3px;">
+                                    <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>
+                                    <span>添加</span>
+                                </button>
+                                <button type="button" class="btn btn-outline btn-default save-node" disabled="" style="margin-right: 1px;margin-left: 0px;border-radius: 3px;">
+                                    <i class="fa fa-save"></i>
+                                    <span>保存</span>
+                                </button>
+                                <div id="e-c" style="display: inline-block;">
+                                    <button type="button" data-action="expand-all" class="btn btn-outline btn-default">
+                                        <i class="glyphicon glyphicon-chevron-down" aria-hidden="true"></i>
+                                        <span>展开</span>
+                                    </button>
+                                    <button type="button" data-action="collapse-all" class="btn btn-outline btn-default">
+                                        <i class="glyphicon glyphicon-chevron-up" aria-hidden="true"></i>
+                                        <span>收起</span>
+                                    </button>
+                                </div>
+                            </div>
+                                <div class="dd" id="nestable2" style="width: 40%;">
+                                    <ol class="dd-list">
+                                        <li class="dd-item dd3-handle">
+                                            <div class="dd-handle dd3-handle">
+                                                <span class="label label-warning"><i class="fa fa-users"></i></span> {$cateInfo.title}
+                                            </div>
+                                            <!--<ol class="dd-list">-->
+                                                {$data|raw}
+                                            <!--</ol>-->
+                                        </li>
+                                    </ol>
+                                </div>
+                                <div class="m-t-md">
+                                    <h5>数据：</h5>
+                                </div>
+                                <textarea id="nestable2-output" class="form-control"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script src="__STATIC__/js/plugins/nestable/jquery.nestable.js"></script>
+<script>
+    var s_id = "{$cateInfo.id}";
+    $(document).ready(function () {
+        //改变节点
+        $('.dd').on('change', function () {
+            $('.save-node').attr('disabled', false);
+        });
+
+        //保存节点
+        $('.save-node').on('click', function () {
+            var ids = $('.dd').nestable('serialize');
+            var index = layer.load(2);
+            $.ajax({
+                type: 'post',
+                url: "{:url('topic/sort')}",
+                dataType: 'json',
+                data:{ids: ids},
+                complete: function () {
+                    layer.close(index);
+                },
+                success: function (res) {
+                    if (res.code === 200) {
+                        layer.msg(res.msg, {time: 1500}, function(){
+                            window.location.reload();
+                        });
+                    } else {
+                        layer.msg(res.msg);
+                    }
+                },
+                error: function (xhr) {
+                    layer.msg('服务器错误');
+                }
+            });
+        });
+        var updateOutput = function (e) {
+            var list = e.length ? e : $(e.target),
+                output = list.data('output');
+            if (window.JSON) {
+                output.val(window.JSON.stringify(list.nestable('serialize'))); //, null, 2));
+            } else {
+                output.val('浏览器不支持');
+            }
+        };
+        // activate Nestable for list 2
+        $('#nestable2').nestable({
+            group: 1
+        }).on('change', updateOutput);
+
+        // output initial serialised data
+        updateOutput($('#nestable2').data('output', $('#nestable2-output')));
+
+        $('#e-c').on('click', function (e) {
+            var target = $(e.target),
+                action = target.data('action');
+            if (action === 'expand-all') {
+                $('.dd').nestable('expandAll');
+            }
+            if (action === 'collapse-all') {
+                $('.dd').nestable('collapseAll');
+            }
+        });
+    });
+
+    function jumpDelete(id) {
+        var url = "{:url('topic/delete')}";
+        ajaxToDelete(url, id)
+    }
+
+    function addOrEdit(name, id) {
+        var url = '';
+        if (id) {
+            url = "{:url('topic/update',array('id'=>'P_id'))}";
+            url =  url.replace("P_id",id);
+        } else {
+            url = "{:url('topic/add')}";
+        }
+        dialog(name, url, 800, 450);
+    }
+
+    function goBack() {
+        var url = "{:url('category/index',array('id'=>'P_id'))}";
+        window.location = url.replace("P_id",s_id);
+    }
+</script>
+{/block}

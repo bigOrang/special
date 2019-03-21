@@ -1,0 +1,254 @@
+{extend name="common/base"/}
+{block name="link"}
+<link href="__STATIC__/css/plugins/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+{/block}
+{block name="style"}
+<style>
+    html {
+        touch-action: none
+    }
+
+    #advanced-search-box .form-group {
+        margin-top: 10px;
+        margin-bottom: 0;
+    }
+
+    #goToTop {
+        position: fixed;
+        bottom: 63px;
+        right: 8%;
+        z-index: 9999;
+    }
+    #detailAdvisory p {
+        word-wrap: break-word;
+        word-break: normal;
+    }
+    #detailAdvisory h2 , a {
+        margin: 10px;
+    }
+</style>
+{/block}
+{block name="body"}
+<div data-role="page" id="form-filter">
+    <div data-role="panel" id="myPanel" data-position="right">
+        <form id="filterForm">
+            <fieldset>
+                <label for="title">咨询标题：</label>
+                <input type="text" name="title" id="title">
+                <label for="category">咨询区筛选(可多选)：</label>
+                <select name="category" id="category" multiple="multiple" data-native-menu="false"  onchange="getAdvisoryData()">
+                    <option>请选择咨询区</option>
+                    {foreach $category as $key=>$vo}
+                    <option value="{$vo.id}">{$vo.name}</option>
+                    {/foreach}
+                </select>
+                <input href="#form-filter" data-rel="close" type="reset" data-inline="true" value="重置">
+                <input href="#form-filter" data-rel="close" type="submit" data-inline="true" value="提交">
+            </fieldset>
+        </form>
+    </div>
+    <div data-role="popup" id="addAdvisory" class="ui-content">
+        <a href="#form-filter" data-rel="back" class="ui-btn ui-corner-all ui-shadow ui-btn-a ui-icon-delete ui-btn-icon-notext ui-btn-right">Close</a>
+        <form id="addAdvisoryForm">
+            <fieldset>
+                <h3>新建咨询</h3>
+                <label for="category1">选择咨询区：</label>
+                <select name="c_id" id="category1" data-native-menu="true">
+                    <option value="">请选择咨询区</option>
+                    {foreach $category as $key=>$vo}
+                    <option value="{$vo.id}">{$vo.name}</option>
+                    {/foreach}
+                </select>
+                <label for="title_1">咨询标题：</label>
+                <textarea name="title" id="title_1" autocomplete="off" maxlength="20" minlength="2" cols="30" rows="10" style="resize: none;"></textarea>
+                <label for="switch">允许他人查看：</label>
+                <input type="checkbox" data-role="flipswitch" name="is_show" id="switch" data-on-text="允许" data-off-text="禁止">
+                <label></label>
+                <input type="reset" data-inline="true" value="重置">
+                <input href="#addAdvisory" data-rel="close" type="submit" data-inline="true" value="提交">
+            </fieldset>
+        </form>
+    </div>
+    <div data-role="panel" id="detailAdvisory">
+        <h2></h2>
+        <p></p>
+        <a href="#detailAdvisory" data-rel="close" class="ui-btn ui-btn-inline ui-shadow ui-corner-all ui-btn-b ui-icon-delete ui-btn-icon-left">关闭</a>
+    </div>
+    <div data-role="header">
+        <h1>在线咨询</h1>
+        <a href="#myPanel" id="swipeleft" data-icon="search" style="display: none">筛选</a>
+        <div data-role="navbar">
+            <ul>
+                <li><a href="#" onclick="getAdvisoryData('common', true)" data-icon="comment" class="ui-btn-active">公共咨询</a>
+                </li>
+                <li><a href="#" onclick="getAdvisoryData('my', true)" data-icon="user">我的咨询</a></li>
+            </ul>
+        </div>
+    </div>
+    <div data-role="main" class="ui-content" id="main-data">
+        <ul data-role="listview" data-inset="true" id="advisory-data">
+        </ul>
+    </div>
+    <div id="goToTop"><a href="#addAdvisory" class="ui-btn ui-shadow ui-corner-all ui-icon-plus ui-btn-icon-notext"
+                         data-rel="popup" data-position-to="window" data-transition="pop"></a></div>
+    <div data-role="footer" data-position="fixed" data-tap-toggle="false">
+        <h1>在线咨询微服务</h1>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    var s_type = '';
+    var limit = 10;
+    var page = 1;
+    jQuery(document).ready(function () {
+        getAdvisoryData();
+        $(window).scroll(function() {
+            var scrollTop = $(document.body).height();
+            var scrollHeight = $("#form-filter").innerHeight();
+            var windowHeight = $(window).scrollTop();
+            if (scrollTop + windowHeight == scrollHeight - 1) {
+                getAdvisoryData(s_type);
+            }
+        });
+        $("#addAdvisoryForm").submit(function (event) {
+            var formData = {};
+            formData = $('#addAdvisoryForm').serializeObject();
+            if (formData.is_show != 'on') {
+                formData.is_show = 'off'
+            }
+            var url = "{:url('index/add')}";
+            addAdvisory(url, formData);
+            return false;
+        });
+    });
+    $(document).on("pagecreate", "#form-filter", function () {
+        $(".ui-panel-wrapper").on("swipeleft", function () {
+            $('#swipeleft').click();
+        });
+    });
+
+    function addAdvisory(url, data) {
+        var index = layer.load(2);
+        $.ajax({
+            url: url,
+            type: 'post',
+            dataType: 'json',
+            data: data,
+            complete: function () {
+                layer.close(index);
+            },
+            success: function (res) {
+                if (res.code == 200) {
+                    layer.open({
+                        title: '成功',
+                        content: '新增咨询成功',
+                        icon: 1
+                    })
+                    parent.location.reload();
+                } else {
+                    layer.open({
+                        title: '错误',
+                        content: res.msg,
+                        icon: 5
+                    })
+                }
+            },
+            error: function (xhr) {
+                layer.open({
+                    title: '失败',
+                    content: '操作失败，请联系管理员',
+                    time: 2000,
+                    icon: 5
+                })
+            }
+        });
+    }
+
+    function getAdvisoryData(type, is_change) {
+        var formData = {};
+        var is_show = '';
+        s_type = type;
+        is_show = type == 'my' ? 1 : 0;
+        if (is_change) {
+            page = 1;
+        }
+        formData = $('#filterForm').serializeObject();
+        formData['is_show'] = is_show;
+        formData['limit'] = limit;
+        formData['page'] = page;
+        var index = layer.load(2);
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            data: formData,
+            url: "{:url('index/getAdvisoryData')}",
+            complete: function () {
+                layer.close(index);
+            },
+            success: function (res) {
+                $("#advisory-data").html('');
+                if (res.code === 200) {
+                    page++;
+                    if (res.data.is_empty == 1) {
+                        $("#advisory-data").append("<h2 style='text-align: center'>暂无数据</h2>");
+                    } else {
+                        $.each(res.data.data, function (key, val) {
+                            var url = "{:url('index/detail',array('id'=>'P_id'))}";
+                            url = url.replace("P_id", val.id);
+                            $("#advisory-data").append('<li class="ui-first-child ui-last-child"><a href="#detailAdvisory" class="ui-btn ui-btn-icon-right ui-icon-carat-r" onclick="getAdvisoryDetail(\'' + url + '\')"><h2>'+ val.title + '</h2> </a> </li>');
+                        });
+                    }
+                } else {
+
+                }
+            },
+            error: function (xhr) {
+                layer.open({
+                    title: '',
+                    content: '操作失败，请联系管理员(2秒后自动关闭)',
+                    time: 2000,
+                    icon: 5
+                })
+            }
+        });
+    }
+
+    function getAdvisoryDetail(url) {
+        var index = layer.load(2);
+        $.ajax({
+            type: 'get',
+            dataType: 'json',
+            url: url,
+            complete: function () {
+                layer.close(index);
+            },
+            success: function (res) {
+                $("#detailAdvisory").html('');
+                if (res.code === 200) {
+                    if (res.data.content == '') {
+                        $("#detailAdvisory").append("<h2>该咨询暂无回答</h2>\n" +
+                            "        <a href=\"#detailAdvisory\" data-rel=\"close\" class=\"ui-btn ui-btn-inline ui-shadow ui-corner-all ui-btn-b ui-icon-delete ui-btn-icon-left\">关闭</a>\n"
+                        );
+                    } else {
+                        $("#detailAdvisory").append("<h2>"+ res.data.title +"</h2>\n" +
+                            "        <p>"+ res.data.content +"</p>\n" +
+                            "        <a href=\"#detailAdvisory\" data-rel=\"close\" class=\"ui-btn ui-btn-inline ui-shadow ui-corner-all ui-btn-b ui-icon-delete ui-btn-icon-left\">关闭</a>\n" +
+                            "    ");
+                    }
+                } else {
+
+                }
+            },
+            error: function (xhr) {
+                layer.open({
+                    title: '',
+                    content: '操作失败，请联系管理员(2秒后自动关闭)',
+                    time: 2000,
+                    icon: 5
+                })
+            }
+        });
+    }
+</script>
+{/block}

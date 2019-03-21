@@ -1,0 +1,70 @@
+{extend name="common/form"/}
+{block name="link"}
+<link href="__STATIC__/js/plugins/multiselect/css/multi-select.css"  rel="stylesheet" type="text/css" />
+{/block}
+{block name="style"}
+<style>
+    #search_div{
+        position: absolute;
+        top: 5px;
+        right: 10px;
+        background: #fff none repeat scroll 0 0;
+        border: 1px solid #ccc;
+        margin: 10px auto;
+        padding:10px;
+        font-family: "Microsoft Yahei", "微软雅黑", "Pinghei";
+        font-size: 14px;
+    }
+    #search_input {
+        width: 200px;
+    }
+</style>
+{/block}
+{block name="script"}
+<script src="__STATIC__/js/plugins/multiselect/js/jquery.multi-select.js"></script>
+<script src="__STATIC__/js/plugins/jquery-quicksearch/jquery.quicksearch.js"></script>
+<script src="__STATIC__/js/plugins/validate/jquery.validate.min.js"></script>
+<script src="__STATIC__/js/plugins/validate/messages_zh.min.js"></script>
+<script src="__STATIC__/js/plugins/select2/select2.min.js"></script>
+<script src="__STATIC__/js/plugins/select2/select2_locale_zh-CN.js"></script>
+{/block}
+{block name="body"}
+<div data-role="main" class="ui-content">
+    <form>
+        <div class="ui-field-contain">
+            <label for="category">咨询区筛选：</label>
+            <select name="category" id="category" data-native-menu="false">
+                <option>请选择咨询区</option>
+                {foreach $category as $key=>$vo}
+                <option value="{$vo.id}">{$vo.name}</option>
+                {/foreach}
+            </select>
+            <label for="search">搜索：</label>
+            <input type="search" name="search" id="search" placeholder="搜索内容...">
+        </div>
+        <input type="submit" data-inline="true" value="提交">
+    </form>
+</div>
+<script>
+    $(".select2").select2();
+    $("#category").change(function () {
+        var d = $(this).val();
+        if (d == 4) {
+            $("#type").hide();
+        } else {
+            $("#type").show();
+        }
+    })
+    jQuery(document).ready(function() {
+        $('.i-checks').iCheck({
+            checkboxClass: 'icheckbox_square-green',
+            radioClass: 'iradio_square-green',
+        });
+    });
+    Parsley.on('form:submit', function(e) {
+        var formData = $('form').serializeObject();
+        console.log(formData);
+        return ajaxPostData(formData, "{:url('advisory/add')}",true);
+    });
+</script>
+{/block}

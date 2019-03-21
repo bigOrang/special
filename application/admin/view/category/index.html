@@ -1,0 +1,165 @@
+{extend name="common/base"/}
+{block name="link"}
+<link href="__STATIC__/css/plugins/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+{/block}
+{block name="style"}
+<style>
+    #advanced-search-box .form-group{
+        margin-top: 10px;
+        margin-bottom: 0;
+    }
+</style>
+{/block}
+{block name="body"}
+
+<div class="wrapper wrapper-content animated fadeInRight">
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="example-wrap">
+                <h4 class="example-title">【{$title}】试题分类查询管理</h4>
+                <div class="example">
+                    <form class="form-horizontal" id="advanced-search-box" style="display: none;">
+                        <div class="row">
+                            <div class="form-group col-xs-12 col-sm-6 col-md-4">
+                                <label class="col-sm-4 control-label">一级分类</label>
+                                <div class="col-sm-8">
+                                    <select name="category" class="form-control" onchange="advancedSearch(this)">
+                                        {foreach $category as $key=>$vo}
+                                            <option value="{$vo.id}">{$vo.title}</option>
+                                        {/foreach}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                    <button type="button" onclick="advancedSearch()" class="btn btn-primary btn-sm">提交</button>
+                                    <button type="reset" class="btn btn-default btn-sm">重置</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div id="toolbar" class="btn-group">
+                        <button type="button" class="btn btn-outline btn-default" title="咨询查询" onclick="window.location='{:url(\'examination/index\')}'">
+                            <i class="glyphicon glyphicon-chevron-left" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline btn-default" onclick="addOrEdit('新增')">
+                            <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline btn-default" id="delete-row" disabled>
+                            <i class="glyphicon glyphicon-trash" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="columns-right pull-right" style="margin-top:10px;margin-bottom:10px;">
+                        <button class="btn btn-default btn-outline" id="advanced-search"
+                                data-toggle="tooltip"
+                                data-placement="top"
+                                data-original-title="高级搜索"
+                        ><i class="fa fa-search"></i></button>
+                    </div>
+                    <table id="grid"  data-toggle="table" class="table-bordered ">
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    var flg = true;
+    var s_id = "{$s_id}";
+    var searchTip = '请输入待查询分类的标题';
+    var columns = [{
+        checkbox: true,
+        visible: true                  //是否显示复选框
+    }, {
+        field: 'id',
+        title: '序号',
+        sortable: false
+    }, {
+        field: 'title',
+        title: '分类名称',
+        sortable: false
+    }, {
+        field: 'parent_title',
+        title: '父级分类',
+        sortable: false
+    }, {
+        field: 'created_at',
+        title: '创建时间',
+        sortable: false
+    }, {
+        field: 'do',
+        title: '操作',
+        formatter: function(value,row,index) {
+            var e = "<a onclick=addOrEdit('编辑',"+row.id+")>编辑</a>&emsp;";
+                e += "<a onclick=topic(" + row.id +")>题目</a>&emsp;";
+                e += "<a onclick=jump(" + row.id +")>删除</a>";
+            return e;
+        }
+    }];
+    var baseParam = {};
+    baseParam.s_id = s_id;
+    var table = new BSTable('grid', "{:url('category/index')}", columns, searchTip, baseParam);
+    table.setPaginationType('server');
+    table.init();
+
+
+    $('#advanced-search').on('click', function () {
+        if (flg === true) {
+            $('#advanced-search-box').show();
+            flg = false;
+        } else {
+            $('#advanced-search-box').hide();
+            flg = true;
+        }
+    });
+
+    //自定义搜索
+    function advancedSearch(obj) {
+        var formData = {};
+        if ('undefined' == typeof obj) {
+            formData = $('form').serializeObject()
+            formData['time'] = $('#date-range').val();
+        } else {
+            formData['category'] = $(obj).val();
+        }
+        var params = {
+            query: formData
+        };
+        table.refresh(params)
+    }
+
+    function jump(id, type) {
+        var url = '';
+        if (type == 'update') {
+            url = "{:url('category/update',array('id'=>'P_id'))}";
+            url =  url.replace("P_id",id);
+            dialog('编辑', url, 800, 450);
+        } else {
+            url = "{:url('category/delete')}";
+            // url =  url.replace("P_id",id);
+            ajaxToDelete(url, id)
+        }
+    }
+
+    function addOrEdit(name, id) {
+        var url = '';
+        if (id) {
+            url = "{:url('category/update',array('s_id'=>'S_id','id'=>'P_id'))}";
+            url =  url.replace("P_id",id);
+        } else {
+            url = "{:url('category/add',array('s_id'=>'S_id'))}";
+        }
+        url =  url.replace("S_id",s_id);
+        dialog(name, url, 800, 450);
+    }
+
+    function topic($id) {
+        var url = '';
+        url = "{:url('topic/index',array('id'=>'P_id'))}";
+        url =  url.replace("P_id",$id);
+        window.location = url;
+    }
+    removeAll('grid', 'delete-row', "{:url('category/delete')}");
+</script>
+{/block}
