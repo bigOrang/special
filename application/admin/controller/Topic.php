@@ -2,6 +2,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\CategoryModel;
+use app\admin\model\TopicDetailModel;
 use app\admin\model\TopicModel;
 use think\Db;
 use think\Exception;
@@ -15,7 +16,7 @@ class Topic extends Base
         $c_id = $request->param("id");
         $cateInfo = CategoryModel::where("id", $c_id)->find();
 //        $data = $this->getTopic($c_id);
-        $data = $this->getTrees(TopicModel::where("c_id", $c_id)->order('sort',"asc")->select()->toArray());
+        $data = $this->getTrees(TopicModel::where("c_id", $c_id)->order(['sort'=>'asc','id'=>'desc'])->select()->toArray());
         $this->assign("data", $data);
         $this->assign("cateInfo", $cateInfo);
         return $this->fetch('./topic/index');
@@ -23,53 +24,56 @@ class Topic extends Base
 
     public function add(Request $request) {
         if ($request->isPost()) {
-            $requestData = $this->validation($request->post(), 'Advisory');
+            $requestData = $this->validation($request->post(), 'Topic');
             try {
-                $advisoryModel = new AdvisoryModel();
-                $advisoryModel->insert([
+                $topicModel = new TopicModel();
+                $topicModel->insert([
                     'title'     => $requestData['title'],
                     'c_id'      => $requestData['c_id'],
-                    'user_id'   => session('user_id'),
-                    'content'   => isset($requestData['content']) ? trim($requestData['content']) : '',
-                    'is_show'   => $requestData['is_show'],
+                    't_parent_id'   => $requestData['t_parent_id'],
                 ]);
                 return $this->responseToJson([],'添加成功');
             } catch (\Exception $e) {
                 return $this->responseToJson([],'添加失败'.$e->getMessage() , 201);
             }
         }
-        $category = CategoryModel::select();
-        $category = json_decode(json_encode($category),true);
-        $this->assign('category', $category);
-        return $this->fetch('./advisory/add');
+        if ($request->has("c_id")) {
+            $c_id = $request->param("c_id");
+            $options = $this->getOptions(TopicModel::where("c_id", $c_id)->order('sort',"asc")->select()->toArray());
+            $this->assign('c_id', $c_id);
+            $this->assign('options', $options);
+            return $this->fetch('./topic/add');
+        } else {
+            exit($this->alertInfo("相关参数未获取"));
+        }
+
     }
 
     public function update(Request $request)
     {
+        $topicModel = new TopicModel();
         if ($request->isPost()) {
-            $requestData = $this->validation($request->post(), 'Advisory');
+            $requestData = $this->validation($request->post(), 'Topic');
             try {
-                $advisoryModel = new AdvisoryModel();
-                $advisoryModel->where("id", $requestData['id'])->update([
-                    'title'=>$requestData['title'],
-                    'c_id'      => $requestData['c_id'],
-                    'content'=>$requestData['content'],
-                    'is_show'   => $requestData['is_show']
+                $topicModel->where("id", $requestData['id'])->update([
+                    'title'     => $requestData['title'],
+                    't_parent_id'   => $requestData['t_parent_id'],
                 ]);
                 return $this->responseToJson([],'编辑成功');
             } catch (\Exception $e) {
                 return $this->responseToJson([],'编辑失败'.$e->getMessage() , 201);
             }
         }
-        if ($request->has("id") && !empty($request->param("id"))) {
+        if ($request->has("id") && $request->has("c_id") ) {
             $id = $request->param("id");
-            $data = AdvisoryModel::where("id", $id)->find();
-            $data = json_decode(json_encode($data),true);
-            $category = CategoryModel::select();
-            $category = json_decode(json_encode($category),true);
-            $this->assign('category', $category);
-            $this->assign("data", $data);
-            return $this->fetch('./advisory/edit');
+            $c_id = $request->param("c_id");
+            $data = $topicModel->where("id",$id)->find();
+            $options = $this->getOptions(TopicModel::where("c_id", $c_id)->order('sort',"asc")->select()->toArray());
+            $this->assign('c_id', $c_id);
+            $this->assign('data', $data);
+            $options = str_replace('<option value="'.$data->t_parent_id.'">',"<option selected value='".$data->t_parent_id."'>", $options);
+            $this->assign('options', $options);
+            return $this->fetch('./topic/edit');
         } else {
             return $this->responseToJson([],'相关参数未获取' , 201);
         }
@@ -80,9 +84,8 @@ class Topic extends Base
         if ($request->has("ids") && !empty($request->param("ids"))) {
             $ids = $request->param("ids");
             try{
-                AdvisoryModel::destroy(function($query) use ($ids) {
-                    $query->whereIn("id",$ids);
-                });
+                TopicModel::destroy($ids);
+                (new \app\admin\model\TopicDetailModel)->whereIn("t_id", $ids)->delete();
                 return $this->responseToJson([],'删除成功' , 200);
             }catch (Exception $e) {
                 return $this->responseToJson([],'删除失败'.$e->getMessage() , 201);
@@ -127,24 +130,45 @@ class Topic extends Base
         return $data;
     }
 
-    private function getTrees($data = [], $pid = 0, $level = 0)
+    private function getTrees($data = [], $pid = 0, $level = 1)
     {
         $html = '';
         foreach ($data as $item) {
             if ($item['t_parent_id'] == $pid) {
-                $html .= '<li class="dd-item" data-id="' . $item['id'] . '"><div class="dd-handle">';
+                $html .= '<li class="dd-item dd3-item"  data-type="child" data-parent="'.$pid.'" data-level="'.$level.'" data-id="' . $item['id'] . '"><div class="dd-handle dd3-handle"></div><div class="dd3-content" data-id="' . $item['id'] .'">';
 
                 $html .= '<span class="pull-right">
                                 <a href="javascript:;" onclick="addOrEdit(\'编辑\', '. $item['id'] .')"><i class="fa fa-pencil"></i></a>&ensp;
                                 <a href="javascript:;" onclick="jumpDelete('. $item['id'] .')"><i class="fa fa-trash"></i></a>
-                            </span><span class="label label-info"><i class="fa fa-cog"></i></span>'. $item['title'] .'</div>';
+                            </span><span class="label label-info"><i class="fa fa-pencil-square-o"></i></span>'. $item['title'] .'</div>';
 
                 $child = $this->getTrees($data, $item['id'], $level+1);
                 if ($child != '') {
-                    $html .= '<ol class="dd-list">' . $child . '</ol>';
+                    $html  = str_replace("child","root", $html);
+                    $html  = str_replace("pencil-square-o","bookmark", $html);
+                    $html .= '<ol class="dd-list" >' . $child . '</ol>';
                 }
 
                 $html .= '</li>';
+            }
+        }
+        return $html;
+    }
+
+    private function getOptions($data = [], $pid = 0, $level = 1)
+    {
+        $html = '';
+        $sp   = '';
+        for($i=0; $i<$level; $i++)
+            $sp.= '&emsp;&ensp;';
+        foreach ($data as $item) {
+            if ($item['t_parent_id'] == $pid) {
+                $html .= '<option value="' . $item['id'] . '">'.$sp.$item['title'].'</option>';
+                $child = $this->getOptions($data, $item['id'], $level+1);
+                if ($child != '') {
+//                    $html  = str_replace("&ensp;","&emsp;&emsp;&emsp;", $html);
+                    $html .= $child;
+                }
             }
         }
         return $html;

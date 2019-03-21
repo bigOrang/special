@@ -119,7 +119,6 @@ class Category extends Base
             $category = $category_model->where("parent_id",0)
                 ->where("s_id", $sid)->where("id","<>", $id)->select()->toArray();
             $data = json_decode(json_encode($data),true);
-            Log::error($data);
             $this->assign('s_id', $sid);
             $this->assign("data", $data);
             $this->assign('category', $category);
@@ -134,7 +133,6 @@ class Category extends Base
         if ($request->has("ids") && !empty($request->param("ids"))) {
             $ids = $request->param("ids");
             try{
-                Log::error($ids);
                 CategoryModel::destroy($ids);
                 return $this->responseToJson([],'删除成功' , 200);
             }catch (Exception $e) {

@@ -1,12 +1,19 @@
 {extend name="common/base"/}
 {block name="link"}
 <link href="__STATIC__/css/plugins/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+<link href="__STATIC__/js/plugins/nestable2/jquery.nestable.css" rel="stylesheet">
 {/block}
 {block name="style"}
 <style>
     #advanced-search-box .form-group{
         margin-top: 10px;
         margin-bottom: 0;
+    }
+    .dd-collapse {
+        display: none !important;
+    }
+    .dd-expand {
+        display: none!important;
     }
 </style>
 {/block}
@@ -19,15 +26,15 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-sm-12">
+        <div class="col-sm-6">
             <div class="example-wrap">
                 <div class="example">
                     <div class="">
                         <div class="ibox-title" style="">
-                            <h5>{$cateInfo.title}</h5>
+                            <h5>{$cateInfo.title}---试题管理</h5>
                         </div>
                         <div class="ibox-content">
-                            <div id="toolbar" class="btn-group">
+                            <div id="toolbar" class="btn-group" style="display: flex;">
                                 <button type="button" class="btn btn-outline btn-default" title="返回分类列表" style="margin-right: 1px;border-radius: 3px;" onclick="goBack()">
                                     <i class="glyphicon glyphicon-chevron-left" aria-hidden="true"></i>
                                     <span>返回分类</span>
@@ -36,7 +43,7 @@
                                     <i class="glyphicon glyphicon-open" aria-hidden="true"></i>
                                     <span>导入</span>
                                 </button>
-                                <button type="button" class="btn btn-outline btn-default" title="添加分类题目" style="margin-right: 1px;margin-left: 0px;border-radius: 3px;">
+                                <button type="button" class="btn btn-outline btn-default" title="添加分类题目" style="margin-right: 1px;margin-left: 0px;border-radius: 3px;" onclick="addOrEdit('添加')">
                                     <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>
                                     <span>添加</span>
                                 </button>
@@ -44,35 +51,78 @@
                                     <i class="fa fa-save"></i>
                                     <span>保存</span>
                                 </button>
-                                <div id="e-c" style="display: inline-block;">
-                                    <button type="button" data-action="expand-all" class="btn btn-outline btn-default">
-                                        <i class="glyphicon glyphicon-chevron-down" aria-hidden="true"></i>
-                                        <span>展开</span>
-                                    </button>
-                                    <button type="button" data-action="collapse-all" class="btn btn-outline btn-default">
-                                        <i class="glyphicon glyphicon-chevron-up" aria-hidden="true"></i>
-                                        <span>收起</span>
-                                    </button>
-                                </div>
+                                <!--<div id="e-c" style="display: inline-block;">-->
+                                    <!--<button type="button" data-action="expand-all" class="btn btn-outline btn-default">-->
+                                        <!--<i class="glyphicon glyphicon-chevron-down" aria-hidden="true"></i>-->
+                                        <!--<span>展开</span>-->
+                                    <!--</button>-->
+                                    <!--<button type="button" data-action="collapse-all" class="btn btn-outline btn-default">-->
+                                        <!--<i class="glyphicon glyphicon-chevron-up" aria-hidden="true"></i>-->
+                                        <!--<span>收起</span>-->
+                                    <!--</button>-->
+                                <!--</div>-->
                             </div>
-                                <div class="dd" id="nestable2" style="width: 40%;">
+                                <div class="dd" id="nestable2">
                                     <ol class="dd-list">
-                                        <li class="dd-item dd3-handle">
-                                            <div class="dd-handle dd3-handle">
+                                        <li class="dd-item dd3-item" data-level="0" data-id="0">
+                                            <div class="dd-handle dd3-handle"></div>
+                                            <div class="dd3-content">
                                                 <span class="label label-warning"><i class="fa fa-users"></i></span> {$cateInfo.title}
                                             </div>
-                                            <!--<ol class="dd-list">-->
+                                            <ol class="dd-list">
                                                 {$data|raw}
-                                            <!--</ol>-->
+                                            </ol>
                                         </li>
                                     </ol>
                                 </div>
-                                <div class="m-t-md">
-                                    <h5>数据：</h5>
-                                </div>
-                                <textarea id="nestable2-output" class="form-control"></textarea>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="ibox float-e-margins">
+                <div class="ibox-title">
+                    <h5>试题详情</h5>
+                </div>
+                <div class="ibox-content">
+                    <div class="col-sm-6">
+                        <div id="tree-view" class="test">
+                            <div class="ibox-content text-center">
+                                <h3 class="m-b-xxs">请先点击左侧试题名称</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6" id="add-topic-detail" style="display: none">
+                        <h5>新建 / 编辑选项：</h5>
+                        <hr>
+                        <form class="form-horizontal m-t" data-parsley-validate id="commentForm">
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">新增内容 <span style="color:red;">*</span></label>
+                                <div class="col-sm-8">
+                                    <textarea name="content" class="form-control"  required id="content" minlength="2" maxlength="100"  cols="30" rows="3" style="resize: none;" placeholder="请输入选项内容详情..."></textarea>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-8 col-sm-offset-3" >
+                                    <div id="sub"></div>
+                                    <button type="submit" id="submit" class="btn btn-w-m btn-primary">提交</button>
+                                    <button type="reset" class="btn btn-w-m btn-warning">重置</button>
+                                </div>
+                            </div>
+                        </form>
+                        <hr>
+                        <div class="form-group">
+                            <div class="col-sm-8 col-sm-offset-3">
+                                <button type="submit" id="up" class="btn btn-sm btn-primary">置顶</button>
+                                <button type="submit" id="up" class="btn btn-sm btn-primary">上移</button>
+                                <button type="submit" id="up" class="btn btn-sm btn-primary">下移</button>
+                                <button type="submit" id="up" class="btn btn-sm btn-primary">置底</button>
+                            </div>
+                        </div>
+                        <div id="event_output"></div>
+                    </div>
+                    <div class="clearfix"></div>
                 </div>
             </div>
         </div>
@@ -80,9 +130,15 @@
 </div>
 {/block}
 {block name="script"}
-<script src="__STATIC__/js/plugins/nestable/jquery.nestable.js"></script>
+<script src="__STATIC__/js/plugins/parsleyjs/dist/parsley.min.js"></script>
+<script src="__STATIC__/js/plugins/nestable2/jquery.nestable.min.js"></script>
+<script src="__STATIC__/js/plugins/treeview/bootstrap-treeview.js"></script>
 <script>
     var s_id = "{$cateInfo.id}";
+    var treeView = [];
+    var addUrl = "{:url('topicDetail/add')}";
+    var t_id = '';
+    var now_t_id = '';
     $(document).ready(function () {
         //改变节点
         $('.dd').on('change', function () {
@@ -115,22 +171,31 @@
                 }
             });
         });
-        var updateOutput = function (e) {
-            var list = e.length ? e : $(e.target),
-                output = list.data('output');
-            if (window.JSON) {
-                output.val(window.JSON.stringify(list.nestable('serialize'))); //, null, 2));
-            } else {
-                output.val('浏览器不支持');
-            }
-        };
-        // activate Nestable for list 2
-        $('#nestable2').nestable({
-            group: 1
-        }).on('change', updateOutput);
 
-        // output initial serialised data
-        updateOutput($('#nestable2').data('output', $('#nestable2-output')));
+        //初始化左侧树型
+        $('#nestable2').nestable({
+            group: 1,
+            'onDragStart': function (l, e) {
+                var ils = $(e).data("level");
+                if(ils === 0){
+                    console.log("不允许拖拽库节点");
+                    return false;
+                }
+                console.log('初始level',ils);
+            },
+            'beforeDragStop': function(l,e, p) {
+                var level = e.data('level');
+            }
+        });
+
+        $(".dd3-content").click(function () {
+            t_id = $(this).data("id");
+            if (now_t_id !== t_id) {
+                $("#sub").empty();
+                now_t_id = t_id
+            }
+            getTopicDetail(t_id)
+        });
 
         $('#e-c').on('click', function (e) {
             var target = $(e.target),
@@ -152,17 +217,102 @@
     function addOrEdit(name, id) {
         var url = '';
         if (id) {
-            url = "{:url('topic/update',array('id'=>'P_id'))}";
+            url = "{:url('topic/update',array('id'=>'P_id','c_id'=>'C_id'))}";
             url =  url.replace("P_id",id);
         } else {
-            url = "{:url('topic/add')}";
+            url = "{:url('topic/add',array('c_id'=>'C_id'))}";
         }
+        url =  url.replace("C_id",s_id);
         dialog(name, url, 800, 450);
+    }
+
+    function getTopicDetail(id) {
+        $.ajax({
+            type: 'post',
+            url: '{:url("topicDetail/index")}',
+            dataType: 'json',
+            data: {id: id},
+            success: function (res) {
+                if (res.code === 200) {
+                    var that = $("#tree-view");
+                    $("#add-topic-detail").show();
+                    that.empty();
+                    treeView = res.data;
+                    that.treeview({
+                        color: "#428bca",
+                        data: treeView,
+                        onNodeSelected: function (event, node) {
+                            $('#content').val(node.text);
+                            $("form label").text("编辑内容").append("<span style='color:red;'>*</span>");
+                            $("#sub").empty().append("<input type='hidden' name='id' value='"+ node.id +"'>");
+                            addUrl = "{:url('topicDetail/update')}";
+                        }
+                    });
+                } else {
+                    layer.open({
+                        title: '失败',
+                        content: res.msg,
+                        icon: 5,
+                        time: 2000
+                    });
+                }
+            },
+            error: function (xhr) {
+                layer.open({
+                    title: '',
+                    content: '操作失败，请联系管理员(2秒后自动关闭)',
+                    time: 2000,
+                    icon: 5
+                })
+            }
+        });
     }
 
     function goBack() {
         var url = "{:url('category/index',array('id'=>'P_id'))}";
         window.location = url.replace("P_id",s_id);
     }
+
+    Parsley.on('form:submit', function(e) {
+        var index = layer.load(2);
+        var formData = $('form').serializeObject();
+        formData['t_id'] = t_id;
+        console.log(formData);
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            data: formData,
+            url: addUrl,
+            complete: function () {
+                layer.close(index);
+            },
+            success: function (data) {
+                if (data.code === 200) {
+                    getTopicDetail(t_id)
+                    $("#content").val("");
+                    addUrl = "{:url('topicDetail/add')}";
+                    $("form label").text("新增内容").append("<span style='color:red;'>*</span>");
+                } else {
+                    layer.open({
+                        title: '错误',
+                        content: data.msg,
+                        time: 2000,
+                        icon: 5,
+                        yes: function(index, layero){
+                        }
+                    })
+                }
+            },
+            error: function (xhr) {
+                layer.open({
+                    title: '',
+                    content: '操作失败，请联系管理员(2秒后自动关闭)',
+                    time: 2000,
+                    icon: 5
+                })
+            }
+        });
+        return false;
+    });
 </script>
 {/block}
