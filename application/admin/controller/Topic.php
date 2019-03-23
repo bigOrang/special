@@ -16,7 +16,7 @@ class Topic extends Base
         $c_id = $request->param("id");
         $cateInfo = CategoryModel::where("id", $c_id)->find();
 //        $data = $this->getTopic($c_id);
-        $data = $this->getTrees(TopicModel::where("c_id", $c_id)->order(['sort'=>'asc','id'=>'desc'])->select()->toArray());
+        $data = $this->getTrees(TopicModel::where("c_id", $c_id)->order(['sort'=>'asc','id'=>'asc'])->select()->toArray());
         $this->assign("data", $data);
         $this->assign("cateInfo", $cateInfo);
         return $this->fetch('./topic/index');
@@ -30,7 +30,7 @@ class Topic extends Base
                 $topicModel->insert([
                     'title'     => $requestData['title'],
                     'c_id'      => $requestData['c_id'],
-                    't_parent_id'   => $requestData['t_parent_id'],
+                    't_parent_id'   => 0,
                 ]);
                 return $this->responseToJson([],'添加成功');
             } catch (\Exception $e) {
@@ -57,7 +57,7 @@ class Topic extends Base
             try {
                 $topicModel->where("id", $requestData['id'])->update([
                     'title'     => $requestData['title'],
-                    't_parent_id'   => $requestData['t_parent_id'],
+                    't_parent_id'   => 0,
                 ]);
                 return $this->responseToJson([],'编辑成功');
             } catch (\Exception $e) {
@@ -135,7 +135,7 @@ class Topic extends Base
         $html = '';
         foreach ($data as $item) {
             if ($item['t_parent_id'] == $pid) {
-                $html .= '<li class="dd-item dd3-item"  data-type="child" data-parent="'.$pid.'" data-level="'.$level.'" data-id="' . $item['id'] . '"><div class="dd-handle dd3-handle"></div><div class="dd3-content" data-id="' . $item['id'] .'">';
+                $html .= '<li class="dd-item dd3-item"  data-type="child" data-parent="'.$pid.'" data-level="'.$level.'" data-id="' . $item['id'] . '"><div class="dd-handle dd3-handle"></div><div class="dd3-content get-top-detail" data-id="' . $item['id'] .'">';
 
                 $html .= '<span class="pull-right">
                                 <a href="javascript:;" onclick="addOrEdit(\'编辑\', '. $item['id'] .')"><i class="fa fa-pencil"></i></a>&ensp;
@@ -183,5 +183,50 @@ class Topic extends Base
             return $this->responseToJson([], '保存失败', 201);
         }
         return $this->responseToJson([], '保存成功');
+    }
+
+
+
+
+    public function zend($array)
+    {
+        $rule_1 = '/^\d+(?!(\.|．)\d*)(?!\s)/';                 //匹配一级
+//        $rule_2 = '/^\d+((\.|．)\d+)+\s+/';       //匹配多级
+        $rule_2 = '/^\d+(\.|．)\d+\s+/';       //匹配二级
+        $rule_3 = '/^\d+(\.|．)\d+(\.|．)\d+\s+/';       //匹配三级
+        $rule_4 = '/(^\s*(\d\s+)|(（\d）))/';       //匹配选项
+        $content = [];
+        $subscript = [];
+        foreach($array as $key=>$value) {
+            $fixed = '';
+            preg_match($rule_1,$value,$content_1);    //一级分类
+            if (!empty($content_1)) {
+                $content[$content_1[0]] = ['name'=>str_replace($content_1[0], '', $value), 'child' =>[]];
+            } elseif (preg_match($rule_2,$value,$content_2) && !empty($content_2)) {
+                $fixed = trim($content_2[0]);
+                $cate_1 = explode(".", str_replace('．', '.', $fixed));         //分割标题前缀1.1
+                $str_1  = str_replace($content_2[0], '', $value);
+                $content[intval($cate_1[0])]['child'][intval($cate_1[1])] = ['name'=>$str_1,'child'=>[]];
+            } elseif (preg_match($rule_3,$value,$content_3) && !empty($content_3)) {
+                $fixed = trim($content_3[0]);
+                $cate_2 = explode(".", str_replace('．', '.', $fixed));       //分割标题前缀1.1.1
+                $subscript = $cate_2;
+                $str_2  = str_replace($content_3[0], '', $value);
+                $content[intval($cate_2[0])]['child'][intval($cate_2[1])]['child'][intval($cate_2[2])] = ['name'=>$str_2,'child'=>[]];
+            } elseif (preg_match($rule_4,$value,$content_4) && !empty($content_4)) {
+                $rule_5 = '/(^\s*(（\d）))/';
+                $fixed  = str_replace(' ', '', $value);
+                preg_match($rule_5,$value,$content_5);
+                if (!empty($content_5)) {
+                    $last_arr = end($content[intval($subscript[0])]['child'][intval($subscript[1])]['child'][intval($subscript[2])]['child'])['name'];
+                    $fixed = $last_arr.$fixed;
+                    array_pop($content[intval($subscript[0])]['child'][intval($subscript[1])]['child'][intval($subscript[2])]['child']);
+                }
+                $content[intval($subscript[0])]['child'][intval($subscript[1])]['child'][intval($subscript[2])]['child'][] = ['name'=>$fixed];
+            } else{
+                continue;
+            }
+        }
+        return $content;
     }
 }

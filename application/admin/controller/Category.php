@@ -4,6 +4,8 @@ namespace app\admin\controller;
 use app\admin\model\AdvisoryModel;
 use app\admin\model\CategoryModel;
 use app\admin\model\SpecialModel;
+use app\admin\model\TopicDetailModel;
+use app\admin\model\TopicModel;
 use think\Db;
 use think\Exception;
 use think\facade\Log;
@@ -150,5 +152,136 @@ class Category extends Base
             exit($this->responseToJson([], $valid, 201, false));
         }
         return $data;
+    }
+
+
+    public function upload(Request $request)
+    {
+        if ($request->isPost()) {
+            $s_id = $request->param("s_id", 0);
+            $file = $request->file("files");
+            if (empty($file)) {
+                return $this->responseToJson([],'未获取到上传文件' , 201);
+            }
+            if (empty($s_id)) {
+                return $this->responseToJson([],'未获取到相关参数' , 201);
+            }
+            $fileUrl = $_FILES['files']['tmp_name'];//文件临时存放路径
+            $fileName = $_FILES['files']['name'];//文件名称
+            //上传另存
+//            $info = $file->rule('uniqid')->move( '.'.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'uploads');
+//            $fileUrl = App::getRootPath() .'public'. DIRECTORY_SEPARATOR.'uploads'. DIRECTORY_SEPARATOR.$info->getSaveName();
+            if (empty($fileUrl)) {
+                return $this->responseToJson([],'请选择要导入的文件' , 201);
+            }
+            $type = strtolower(trim(substr(strrchr($fileName, '.'), 1)));//获取文件类型
+            if ($type != 'csv') {
+                return $this->responseToJson([],'请选择csv类型的文件上传' , 201);
+            }
+            //开始读取文件
+            $handle = fopen($fileUrl, "r");
+            if(!$handle){
+                return $this->responseToJson([],'文件打开失败' , 201);
+            }
+            $hang = 1;
+            $rule_1 = '/^\d+(?!(\.|．)\d*)(?!\s)/';                 //匹配一级
+//        $rule_2 = '/^\d+((\.|．)\d+)+\s+/';       //匹配多级
+            $rule_2 = '/^\d+(\.|．)\d+\s+/';       //匹配二级
+            $rule_3 = '/^\d+(\.|．)\d+(\.|．)\d+\s+/';       //匹配三级
+            $rule_4 = '/(^\s*(\d\s+)|(（\d）))/';       //匹配选项
+            $content = [];
+            $subscript = [];
+            while ($data = fgetcsv($handle)) {
+                $hang++;
+                foreach ($data as $i => $val)
+                    $data[$i] = mb_convert_encoding($val, "UTF-8", "GBK");
+                if (!empty($data[0])) {
+                    $value = $data[0];
+                    $fixed = '';
+                    preg_match($rule_1,$value,$content_1);    //一级分类
+                    if (!empty($content_1)) {
+                        $content['level_1'][$content_1[0]] = str_replace($content_1[0], '', $value);
+                    } elseif (preg_match($rule_2,$value,$content_2) && !empty($content_2)) {
+                        $fixed = trim($content_2[0]);
+                        $cate_1 = explode(".", str_replace('．', '.', $fixed));         //分割标题前缀1.1
+                        $content['level_2'][intval($cate_1[0])][intval($cate_1[1])] = str_replace($content_2[0], '', $value);
+                    } elseif (preg_match($rule_3,$value,$content_3) && !empty($content_3)) {
+                        $fixed = trim($content_3[0]);
+                        $cate_2 = explode(".", str_replace('．', '.', $fixed));       //分割标题前缀1.1.1
+                        $subscript = $cate_2;
+                        $content['level_3'][intval($cate_2[0])][intval($cate_2[1])][intval($cate_2[2])] = str_replace($content_3[0], '', $value);
+                    } elseif (preg_match($rule_4,$value,$content_4) && !empty($content_4)) {
+                        $rule_5 = '/(^\s*(（\d）))/';
+                        $fixed  = str_replace(' ', '', $value);
+                        preg_match($rule_5,$value,$content_5);
+                        if (!empty($content_5)) {
+                            $last_arr = end($content['level_4'][intval($subscript[0])][intval($subscript[1])][intval($subscript[2])]);
+                            $fixed = $last_arr.$fixed;
+                            array_pop($content['level_4'][intval($subscript[0])][intval($subscript[1])][intval($subscript[2])]);
+                        }
+                        $content['level_4'][intval($subscript[0])][intval($subscript[1])][intval($subscript[2])][] = $fixed;
+                    } else{
+                        continue;
+                    }
+                }
+            }
+            fclose($handle);
+            $len_result = count($content);
+            if ($len_result == 0)
+                return $this->responseToJson([],'文件没有任何数据' , 201);
+            Db::startTrans();
+            try {
+                $insertNum = 0;
+                $topModel = new TopicModel();
+                $cateModel = new CategoryModel();
+                $topDetailModel = new TopicDetailModel();
+                foreach ($content['level_1'] as $key=>$value) {
+                    $insertNum++;
+                    $setIn    = $cateModel->where("s_id", $s_id)->where("parent_id", 0)->where("title", $value)->count();
+                    if (empty($setIn)) {
+                        $thisId = $cateModel->insertGetId(['s_id'=>$s_id, 'parent_id'=>0, 'title'=> $value]); //一级分类插入自增ID
+                        foreach ($content['level_2'][$key] as $key2 => $value2) {
+                            $insertNum++;
+                            $setIn2    = $cateModel->where("s_id", $s_id)->where("parent_id", $thisId)->where("title", $value2)->count();
+                            if (empty($setIn2)) {
+                                $thisId2 = $cateModel->insertGetId(['s_id'=>$s_id, 'parent_id'=>$thisId, 'title'=> $value2]);
+                                foreach ($content['level_3'][$key][$key2] as $key3 => $value3) {
+                                    $insertNum++;
+                                    $setIn3    = $topModel->where("c_id", $thisId2)->where("t_parent_id", 0)->where("title", $value3)->count();
+                                    if (empty($setIn3)) {
+                                        $insertLevel4Data = [];
+                                        $thisId3 = $topModel->insertGetId(['c_id'=>$thisId2, 't_parent_id'=>0, 'title'=> $value3]);
+                                        foreach ($content['level_4'][$key][$key2][$key3] as $key4 => $value4) {
+                                            $insertNum++;
+                                            $insertLevel4Data[] = [
+                                                't_id'=>$thisId3,
+                                                'content'=> $value4
+                                            ];
+                                        }
+                                        Log::error($insertLevel4Data);
+                                        $topDetailModel->insertAll($insertLevel4Data);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Db::commit();
+                return $this->responseToJson([],"导入文件成功，共计{$insertNum}条" , 200);
+            } catch (\Exception $e) {
+                Db::rollback();
+                Log::error($e->getMessage());
+                return $this->responseToJson([],'导入文件失败' , 201);
+            }
+        }
+        if ($request->has("s_id") && !empty($request->param("s_id"))) {
+            $s_id = $request->param('s_id');
+            $this->assign('s_id', $s_id);
+            return $this->fetch('./category/upload');
+        } else {
+            exit($this->fetch('./404',[
+                'msg' => '相关参数未获取'
+            ]));
+        }
     }
 }

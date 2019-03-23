@@ -39,10 +39,6 @@
                                     <i class="glyphicon glyphicon-chevron-left" aria-hidden="true"></i>
                                     <span>返回分类</span>
                                 </button>
-                                <button type="button" class="btn btn-outline btn-default" title="导入分类题目" style="margin-right: 1px;margin-left: 0px;border-radius: 3px;">
-                                    <i class="glyphicon glyphicon-open" aria-hidden="true"></i>
-                                    <span>导入</span>
-                                </button>
                                 <button type="button" class="btn btn-outline btn-default" title="添加分类题目" style="margin-right: 1px;margin-left: 0px;border-radius: 3px;" onclick="addOrEdit('添加')">
                                     <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>
                                     <span>添加</span>
@@ -63,17 +59,17 @@
                                 <!--</div>-->
                             </div>
                                 <div class="dd" id="nestable2">
-                                    <ol class="dd-list">
-                                        <li class="dd-item dd3-item" data-level="0" data-id="0">
-                                            <div class="dd-handle dd3-handle"></div>
-                                            <div class="dd3-content">
-                                                <span class="label label-warning"><i class="fa fa-users"></i></span> {$cateInfo.title}
-                                            </div>
-                                            <ol class="dd-list">
+                                    <!--<ol class="dd-list">-->
+                                        <!--<li class="dd-item dd3-item" data-level="0" data-id="0">-->
+                                            <!--<div class="dd-handle dd3-handle"></div>-->
+                                            <!--<div class="dd3-content">-->
+                                                <!--<span class="label label-warning"><i class="fa fa-users"></i></span> {$cateInfo.title}-->
+                                            <!--</div>-->
+                                            <!--<ol class="dd-list">-->
                                                 {$data|raw}
-                                            </ol>
-                                        </li>
-                                    </ol>
+                                            <!--</ol>-->
+                                        <!--</li>-->
+                                    <!--</ol>-->
                                 </div>
                         </div>
                     </div>
@@ -87,13 +83,24 @@
                 </div>
                 <div class="ibox-content">
                     <div class="col-sm-6">
+                        <div class="form-group add-topic-detail" style="display: none">
+                            <div class="col-sm-10 col-sm-offset-1">
+                                <button type="button" id="delete" onclick="C_columnSetDel(this)" class="btn btn-sm btn-danger">删除</button>
+                                <button type="button" id="top" onclick="C_columnSetTop(this)" class="btn btn-sm btn-primary">置顶</button>
+                                <button type="button" id="up" onclick="C_columnSetMoveUp(this)" class="btn btn-sm btn-primary">上移</button>
+                                <button type="button" id="down" onclick="C_columnSetMoveDown(this)" class="btn btn-sm btn-primary">下移</button>
+                                <button type="button" id="under" onclick="C_columnSetBottom(this)" class="btn btn-sm btn-primary">置底</button>
+                                <button type="button" id="save" onclick="sortSave()" class="btn btn-sm btn-primary save-sort" disabled="">保存</button>
+                            </div>
+                        </div>
+                        <br>
                         <div id="tree-view" class="test">
                             <div class="ibox-content text-center">
                                 <h3 class="m-b-xxs">请先点击左侧试题名称</h3>
                             </div>
                         </div>
                     </div>
-                    <div class="col-sm-6" id="add-topic-detail" style="display: none">
+                    <div class="col-sm-6 add-topic-detail" style="display: none">
                         <h5>新建 / 编辑选项：</h5>
                         <hr>
                         <form class="form-horizontal m-t" data-parsley-validate id="commentForm">
@@ -107,19 +114,11 @@
                                 <div class="col-sm-8 col-sm-offset-3" >
                                     <div id="sub"></div>
                                     <button type="submit" id="submit" class="btn btn-w-m btn-primary">提交</button>
-                                    <button type="reset" class="btn btn-w-m btn-warning">重置</button>
+                                    <button type="reset" onclick="resetDetail()" class="btn btn-w-m btn-warning">重置</button>
                                 </div>
                             </div>
                         </form>
                         <hr>
-                        <div class="form-group">
-                            <div class="col-sm-8 col-sm-offset-3">
-                                <button type="submit" id="up" class="btn btn-sm btn-primary">置顶</button>
-                                <button type="submit" id="up" class="btn btn-sm btn-primary">上移</button>
-                                <button type="submit" id="up" class="btn btn-sm btn-primary">下移</button>
-                                <button type="submit" id="up" class="btn btn-sm btn-primary">置底</button>
-                            </div>
-                        </div>
                         <div id="event_output"></div>
                     </div>
                     <div class="clearfix"></div>
@@ -134,17 +133,18 @@
 <script src="__STATIC__/js/plugins/nestable2/jquery.nestable.min.js"></script>
 <script src="__STATIC__/js/plugins/treeview/bootstrap-treeview.js"></script>
 <script>
-    var s_id = "{$cateInfo.id}";
+    var s_id = "{$cateInfo.s_id}";
+    var st_id = "{$cateInfo.id}";
     var treeView = [];
     var addUrl = "{:url('topicDetail/add')}";
     var t_id = '';
     var now_t_id = '';
+    var sort_save = {};
     $(document).ready(function () {
         //改变节点
         $('.dd').on('change', function () {
             $('.save-node').attr('disabled', false);
         });
-
         //保存节点
         $('.save-node').on('click', function () {
             var ids = $('.dd').nestable('serialize');
@@ -174,7 +174,8 @@
 
         //初始化左侧树型
         $('#nestable2').nestable({
-            group: 1,
+            group: 0,
+            maxDepth: 1,
             'onDragStart': function (l, e) {
                 var ils = $(e).data("level");
                 if(ils === 0){
@@ -188,14 +189,17 @@
             }
         });
 
-        $(".dd3-content").click(function () {
+        //右侧选项详情获取
+        $(".get-top-detail").click(function () {
             t_id = $(this).data("id");
             if (now_t_id !== t_id) {
                 $("#sub").empty();
                 now_t_id = t_id
             }
+            resetDetail();
             getTopicDetail(t_id)
         });
+
 
         $('#e-c').on('click', function (e) {
             var target = $(e.target),
@@ -208,6 +212,7 @@
             }
         });
     });
+
 
     function jumpDelete(id) {
         var url = "{:url('topic/delete')}";
@@ -222,7 +227,7 @@
         } else {
             url = "{:url('topic/add',array('c_id'=>'C_id'))}";
         }
-        url =  url.replace("C_id",s_id);
+        url =  url.replace("C_id",st_id);
         dialog(name, url, 800, 450);
     }
 
@@ -235,7 +240,7 @@
             success: function (res) {
                 if (res.code === 200) {
                     var that = $("#tree-view");
-                    $("#add-topic-detail").show();
+                    $(".add-topic-detail").show();
                     that.empty();
                     treeView = res.data;
                     that.treeview({
@@ -243,10 +248,13 @@
                         data: treeView,
                         onNodeSelected: function (event, node) {
                             $('#content').val(node.text);
+                            $('.save-sort').attr('disabled', false);
                             $("form label").text("编辑内容").append("<span style='color:red;'>*</span>");
                             $("#sub").empty().append("<input type='hidden' name='id' value='"+ node.id +"'>");
                             addUrl = "{:url('topicDetail/update')}";
                         }
+                    }).change(function () {
+                        console.log('123');
                     });
                 } else {
                     layer.open({
@@ -288,10 +296,9 @@
             },
             success: function (data) {
                 if (data.code === 200) {
-                    getTopicDetail(t_id)
-                    $("#content").val("");
-                    addUrl = "{:url('topicDetail/add')}";
-                    $("form label").text("新增内容").append("<span style='color:red;'>*</span>");
+                    layer.msg("提交成功");
+                    getTopicDetail(t_id);   //获取详情
+                    resetDetail();          //
                 } else {
                     layer.open({
                         title: '错误',
@@ -314,5 +321,122 @@
         });
         return false;
     });
+
+    //选项删除
+    function C_columnSetDel(o){
+        var obj = $("#tree-view").find(".node-selected");
+        if(obj.length > 0){
+            obj.hide();
+        }else {
+            layer.msg('系统提示:请选择要【删除】的列！')
+        }
+    }
+    //选项置底
+    function C_columnSetBottom(o){
+        var obj = $("#tree-view").find(".node-selected");
+        var list = $("#tree-view").find("li");
+        if(obj.length > 0){
+            var thisLocation = list.index( obj );
+            if( thisLocation >= list.length - 1 ){
+                layer.msg('系统提示:已移到最底端了！')
+            }else {
+                //console.log (thisLocation);
+                obj.parent().append(obj);   //移动到最底
+            }
+            //console.log (list.length);
+        }else {
+            layer.msg('系统提示:请选择要【置底】的列！')
+        }
+    }
+    //选项下移动
+    function C_columnSetMoveDown(o){
+        var obj = $("#tree-view").find(".node-selected");
+        var list = $("#tree-view").find("li");
+        if(obj.length > 0){
+            var thisLocation = list.index( obj );
+            if( thisLocation >= list.length - 1 ){
+                layer.msg('系统提示:已移到最底端了！')
+            }else {
+                //console.log (thisLocation);
+                obj.next().after(obj); //下移动
+            }
+            //console.log (list.length);
+        }else {
+            layer.msg('系统提示:请选择要【下移】的列！')
+        }
+    }
+    //选项置顶
+    function C_columnSetTop(o){
+        var obj = $("#tree-view").find(".node-selected");
+        var list = $("#tree-view").find("li");
+        if(obj.length > 0){
+            var thisLocation = list.index( obj );
+            if( thisLocation < 1 ){
+                layer.msg('系统提示:已移到最顶端了！')
+            }else {
+                console.log (thisLocation);
+                obj.parent().prepend(obj);  //移动到最顶
+            }
+        }else {
+            layer.msg('系统提示:请选择要【置顶】的列！')
+        }
+    }
+    //选项上移动
+    function C_columnSetMoveUp(o){
+        var obj = $("#tree-view").find(".node-selected");
+        var list = $("#tree-view").find("li");
+        if(obj.length > 0){
+            var thisLocation = list.index( obj );
+            if( thisLocation < 1 ){
+                layer.msg('系统提示:已移到最顶端了！')
+            }else {
+                //console.log (thisLocation);
+                obj.prev().before(obj); //上移动
+            }
+            //console.log (list.length);
+        }else {
+            layer.msg('系统提示:请选择要【上移】的列！')
+        }
+    }
+    //选项填报重置
+    function resetDetail() {
+        $("#content").val("");
+        addUrl = "{:url('topicDetail/add')}";
+        $("form label").text("新增内容").append("<span style='color:red;'>*</span>");
+    }
+    //选项排序提交
+    function sortSave(){
+        var sortData = [];
+        var list = $("#tree-view").find("li");
+        $.each(list, function (key, val) {
+            var obj = [];
+            obj['id'] = $(this).attr('data-tid');
+            obj['sort'] = (key + 1);
+            sortData.push({'id':$(this).attr('data-tid'), 'sort' : (key+1)})
+        });
+        var index = layer.load(2);
+        $.ajax({
+            type: 'post',
+            url: "{:url('topicDetail/sort')}",
+            dataType: 'json',
+            data:{ids: sortData},
+            complete: function () {
+                layer.close(index);
+            },
+            success: function (res) {
+                if (res.code === 200) {
+                    layer.msg(res.msg, {time: 1500}, function(){
+                        // getTopicDetail(t_id)
+                    });
+                } else {
+                    layer.msg(res.msg);
+                }
+            },
+            error: function (xhr) {
+                layer.msg('服务器错误');
+            }
+        });
+        // console.log('sortData',sortData);
+    }
 </script>
 {/block}

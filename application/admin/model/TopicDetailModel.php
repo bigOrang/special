@@ -9,6 +9,8 @@
 namespace app\admin\model;
 
 
+use think\Db;
+use think\facade\Log;
 use think\Model;
 use think\model\concern\SoftDelete;
 

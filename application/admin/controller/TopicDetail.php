@@ -16,8 +16,7 @@ class TopicDetail extends Base
         if ($request->isPost() && $request->has("id")) {
             $topicDetailModel = new TopicDetailModel();
             $t_id = $request->param("id");
-            $data = $topicDetailModel->where("t_id", $t_id)->field("content as text, id, id as href")->select()->toArray();
-            Log::error($data);
+            $data = $topicDetailModel->where("t_id", $t_id)->order("sort","asc")->field("content as text, id, id as href")->select()->toArray();
             return $this->responseToJson(json_encode($data, 320), 'success');
         }
         return $this->responseToJson([], '错误的访问方式','301');
@@ -85,8 +84,7 @@ class TopicDetail extends Base
     public function sort(Request $request)
     {
         $ids = $request->param('ids');
-        $parseNode = $this->parseNode($ids);
-        $res = $this->updateBatch('t_special_topic', $parseNode);
+        $res = $this->updateBatch('t_special_topic_detail', $ids);
         if (!$res) {
             return $this->responseToJson([], '保存失败', 201);
         }

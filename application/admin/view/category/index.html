@@ -36,10 +36,12 @@
                             </div>
                         </div>
                     </form>
-
                     <div id="toolbar" class="btn-group">
                         <button type="button" class="btn btn-outline btn-default" title="咨询查询" onclick="window.location='{:url(\'examination/index\')}'">
                             <i class="glyphicon glyphicon-chevron-left" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline btn-default" title="导入分类题目" style="margin-right: 1px;margin-left: 0px;border-radius: 3px;" onclick="upload()">
+                            <i class="glyphicon glyphicon-open" aria-hidden="true"></i>
                         </button>
                         <button type="button" class="btn btn-outline btn-default" onclick="addOrEdit('新增')">
                             <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>
@@ -152,6 +154,13 @@
         }
         url =  url.replace("S_id",s_id);
         dialog(name, url, 800, 450);
+    }
+
+    function upload() {
+        var url = '';
+        url = "{:url('category/upload',array('s_id'=>'S_id'))}";
+        url =  url.replace("S_id",s_id);
+        dialog('导入', url, 800, 450);
     }
 
     function topic($id) {
