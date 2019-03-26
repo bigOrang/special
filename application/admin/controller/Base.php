@@ -26,11 +26,11 @@ class Base extends Controller
                 session('auth_status', $res['extra']['status']);
                 session('school_id', $school_id);
             } else {
-                 session('auth_status',1);
-                 session('school_id', $school_id);
-//               exit($this->fetch('./403',[
-//                   'msg' => '没有权限'
-//               ]));
+//                 session('auth_status',1);
+//                 session('school_id', $school_id);
+               exit($this->fetch('./403',[
+                   'msg' => '没有权限'
+               ]));
             }
         } else {
             if (empty(session('auth_status'))) {

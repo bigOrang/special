@@ -11,7 +11,6 @@
 </style>
 {/block}
 {block name="body"}
-
 <div class="wrapper wrapper-content animated fadeInRight">
     <div class="row">
         <div class="col-sm-12">
@@ -32,7 +31,7 @@
                             </div>
                             <div class="form-group">
                                     <button type="button" onclick="advancedSearch()" class="btn btn-primary btn-sm">提交</button>
-                                    <button type="reset" class="btn btn-default btn-sm">重置</button>
+                                    <button type="reset" onclick="advancedSearch()" class="btn btn-default btn-sm">重置</button>
                             </div>
                         </div>
                     </form>
@@ -66,6 +65,8 @@
 </div>
 {/block}
 {block name="script"}
+<script src="__STATIC__/js/plugins/select2/select2.min.js"></script>
+<script src="__STATIC__/js/plugins/select2/select2_locale_zh-CN.js"></script>
 <script>
     var flg = true;
     var s_id = "{$s_id}";
@@ -94,8 +95,10 @@
         title: '操作',
         formatter: function(value,row,index) {
             var e = "<a onclick=addOrEdit('编辑',"+row.id+")>编辑</a>&emsp;";
+            e += "<a onclick=jump(" + row.id +")>删除</a>&emsp;";
+            if (row.parent_id !== null) {
                 e += "<a onclick=topic(" + row.id +")>题目</a>&emsp;";
-                e += "<a onclick=jump(" + row.id +")>删除</a>";
+            }
             return e;
         }
     }];

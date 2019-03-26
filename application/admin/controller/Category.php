@@ -21,7 +21,6 @@ class Category extends Base
             try{
                 $limit = $request->param('limit', 10);
                 $searchData = $request->param();
-                Log::error($searchData);
                 $data = $categoryModel->alias("a")->where(function ($query) use ($searchData) {
                     //模糊搜索
                     if (isset($searchData['search']) && !empty($searchData['search'])) {
