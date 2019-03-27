@@ -1,6 +1,6 @@
 <?php
 
-namespace app\index\model;
+namespace app\teacher\model;
 
 use think\Db;
 use think\Model;

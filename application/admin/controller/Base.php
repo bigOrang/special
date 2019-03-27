@@ -106,9 +106,8 @@ class Base extends Controller
 
     /**
      * 消息提示模板
-     * @param string $msg 提示信息
-     * @param string $url 跳转地址
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     * @param string $msg
+     * @return mixed
      */
     protected function alertInfo($msg = '')
     {

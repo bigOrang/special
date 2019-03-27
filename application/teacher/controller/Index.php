@@ -1,93 +1,311 @@
 <?php
-namespace app\index\controller;
+namespace app\teacher\controller;
 
-use app\admin\model\AdvisoryModel;
 use app\admin\model\CategoryModel;
+use app\admin\model\SpecialModel;
+use app\admin\model\TopicDetailModel;
+use app\admin\model\TopicModel;
+use app\teacher\model\StudentModel;
+use app\teacher\model\TopicUserModel;
+use app\common\Steps;
 use think\Db;
 use think\Exception;
 use think\facade\Log;
+use think\facade\Session;
 use think\Request;
 
 class Index extends Base
 {
     public function index(Request $request)
     {
-        $category = CategoryModel::select();
+        Session::delete("questionIndex");
+        Session::delete("nextIndex");
+        Session::delete("topicUser");
+        Session::delete("topicCId");
+        $c_id = $request->param('c_id',0);
+        $category = CategoryModel::where("parent_id",0)->select();
         $category = json_decode(json_encode($category),true);
         $this->assign('category', $category);
+        if ($c_id != 0) {
+            $this->assign('cateNow', $c_id);
+        }
         return $this->fetch('./index/index');
     }
 
-    public function getAdvisoryData(Request $request)
+    public function getStudentList(Request $request)
     {
         if ($request->isPost()) {
             $requestData   = $request->param();
-            $advisoryModel = new AdvisoryModel();
+            $studentModel = new StudentModel();
+            $topicUserModel = new TopicUserModel();
             $limit = $request->param("limit", 10);
             $page = $request->param("page", 1);
             $limit = $limit * $page;
-            $query = $advisoryModel->alias("a")
-                ->leftJoin("t_advisory_category b","a.c_id=b.id")
-                ->field("a.*,b.name");
-            if (isset($requestData['category'])) {
-                $query->whereIn("a.c_id", $requestData['category']);
-            }
+            $field = "a.*,b.id as answer_id, CASE WHEN b.td_id <> 0 and b.`c_id` = {$requestData['category']} THEN '已填写' ELSE '未填写' END AS is_over";
+            $childSql = $topicUserModel->where("c_id", $requestData['category'])->field("id,c_id,td_id,t_id,user_code")->buildSql();
+            $query = $studentModel->alias("a")
+                ->leftJoin("{$childSql} b","a.code=b.user_code")
+                ->leftJoin("t_sys_class c","c.id=a.class_id")
+                ->where("c.grade_no", session("grade"))
+                ->where("c.class_no", session("class"))
+                ->order("a.code");
             if (isset($requestData['search']) && !empty(trim($requestData['search']))) {
-                $query->whereIn("b.name", "LIKE","%".$requestData['search']."%");
+                $query->where("a.name", "LIKE","%".$requestData['search']."%");
             }
-            if ($requestData['isCommon'] == 1) {
-                $query->where("a.is_show", 0);
-            } else {
-                $query->where("a.user_id", session("user_id"));
-            }
-            $data = $query->page(1,$limit)->select();
+            $data = $query->field($field)->group("a.code")->page(1,$limit)->select();
             $is_empty = empty(json_decode(json_encode($data),true)) ? 1 : 2;
+
             return $this->responseToJson(['data'=>$data,'is_empty'=>$is_empty],'查询成功');
         } else {
             return $this->responseToJson([],'不被允许的获取方式',201);
         }
     }
 
-    public function add(Request $request) {
+    public function detail(Request $request)
+    {
         if ($request->isPost()) {
-            $requestData = $this->validation($request->post(), 'Advisory');
-            try {
-                $advisoryModel = new AdvisoryModel();
-                $insert = $advisoryModel->insert([
-                    'title'     => $requestData['title'],
-                    'c_id'      => $requestData['c_id'],
-                    'user_id'   => session("user_id"),
-                    'content'   => isset($requestData['content']) ? trim($requestData['content']) : '',
-                    'is_show'   => $requestData['is_show'] == 'on' ? 0 : 1
-                ]);
-                return $this->responseToJson([],'添加成功');
-            } catch (\Exception $e) {
-                return $this->responseToJson([],'添加失败' , 201);
+            $radioArr = $request->param("radio");
+            $insertArr = [];
+            $result = true;
+            if (!empty($radioArr)) {
+                $tId = array_keys($radioArr);
+                $topicUserModel = new TopicUserModel();
+                $data = $topicUserModel ->where("c_id", session("topicCId"))
+                    ->whereIn("t_id", $tId)
+                    ->where("user_code", session("topicUser"))
+                    ->field("id,t_id")->select()->toArray();
+                if (!empty($data)) {
+                    foreach ($data as $key=>$value) {
+                        $data[$key]['td_id'] = $radioArr[$value['t_id']];
+                    }
+                    $result = $this->updateBatch('t_special_topic_user', $data);
+                } else {
+                    foreach ($radioArr as $key =>$value) {
+                        $insertArr[$key] = [
+                            'td_id' => $value,
+                            'c_id' => session("topicCId"),
+                            't_id' => $key,
+                            'user_code' => session("topicUser")
+                        ];
+                    }
+                    $result = $topicUserModel->insertAll($insertArr);
+                }
+            }
+            if ($request->param("is_end") == 1) {
+                $c_id = session("topicCId");
+                Session::delete("questionIndex");
+                Session::delete("nextIndex");
+                Session::delete("topicUser");
+                Session::delete("topicCId");
+                if ($result !== false) {
+                    return $this->responseToJson(['url'=> url("index/index"),'c_id' => $c_id],'考核成功');
+                } else {
+                    return $this->responseToJson(['url'=> url("index/index"),'c_id' => $c_id],'考核失败', 201);
+                }
+            } else {
+                session("questionIndex", session("nextIndex"));
+                if ($result !== false) {
+                    return $this->responseToJson(['q_id'=>session("questionIndex")],'考核成功');
+                } else {
+                    return $this->responseToJson([],'考核失败', 201);
+                }
             }
         } else {
-            $category = CategoryModel::field("id as value, name as text")->select();
-            $category = json_encode($category);
-            $this->assign('category', $category);
-            return $this->fetch('./index/add');
+            $topicModel = new TopicModel();
+            $topicDetail = new TopicDetailModel();
+            $categoryModel = new CategoryModel();
+            $specialModel = new SpecialModel();
+            $topicUserModel = new TopicUserModel();
+            $sId = session("s_id");
+            $cId = $request->param("c_id", 0);
+            $userCode = $request->param("id",0);
+            $questionIndex = $request->param("q_id",0);
+            if (!Session::has('topicUser') && !Session::has('topicCId')) {
+                session("topicUser", $userCode);
+                session("topicCId", $cId);
+            } else {
+                $cId = session("topicCId");
+                $userCode = session("topicUser");
+            }
+            //1、获取当前试题的答题方式
+            $type = $specialModel->where("id", $sId)->value("status");
+            $this->assign("type", $type); //1-分制，2-等级制
+
+            //2、获取当前试题的上级分类名称
+            $steps = new Steps();
+            $title = $categoryModel->where("id", $cId)->value("title");
+            //3、获取上级分类的子分类集（默认为第一个），并判断是否为当前分类下的最后一个子分类集
+            $cateArr = $categoryModel->where("parent_id", $cId)->column("title","id");
+            if (Session::has("questionIndex") && session("questionIndex") == $questionIndex) {
+                $category = session("questionIndex");
+                $b_title = $cateArr[$category];
+                session("questionIndex", $category);
+            } else {
+                $b_title = reset($cateArr);
+                $category = key($cateArr);
+                session("questionIndex", $category);
+            }
+            foreach ($cateArr as $key=>$value) {
+                $steps->add($key);
+            }
+            $steps->setCurrent($category);
+            session("nextIndex", $steps->getNext());
+            if ($steps->getNext() !== false) {
+                $isEnd = false;
+            } else {
+                $isEnd = true;
+            }
+            //4、获取小分类下的选项集
+            $question = $topicModel->whereIn("c_id", $category)->field("id,title")->select()->toArray();
+            $tIdArr =  array_column($question, "id");
+            $topics = $topicDetail->field("id,content,t_id")->order(['sort' => 'desc','id'=>'asc'])->whereIn("t_id", $tIdArr)->select()->toArray();
+            foreach ($question as $key=>$value) {
+                foreach ($topics as $list=>$info) {
+                    if ($info['t_id'] == $value['id']) {
+                        $question[$key]['child'][$list] = $topics[$list];
+                    }
+                }
+            }
+            $findDetail = $topicUserModel->where("c_id", $cId)->where("user_code", session("topicUser"))->whereIn("t_id", $tIdArr)->find();
+            if (empty($findDetail)) {
+                $insertAll = [];
+                foreach ($tIdArr as $key=>$value) {
+                    $insertAll[$key] = [
+                        'c_id' => $cId,
+                        't_id' => $value,
+                        'td_id'=>0,
+                        'user_code' => $userCode
+                    ];
+                }
+                $topicUserModel->insertAll($insertAll);
+            }
+            if (empty($question) && empty(session("nextIndex"))) {
+                $category = CategoryModel::where("parent_id",0)->select();
+                $category = json_decode(json_encode($category),true);
+                $this->assign('category', $category);
+                $this->assign('cateNow', $cId);
+                return $this->fetch("./index/index");
+            }
+            $this->assign("question", $question);
+            $this->assign("title", $title.'--'.$b_title);
+            $this->assign("c_id", $cId);
+            $this->assign("code", $userCode);
+            $this->assign("is_end", $isEnd);
+            $this->assign("q_id", $questionIndex);
+            return $this->fetch('./index/detail');
         }
     }
 
-    public function detail(Request $request)
+    public function detailEdit(Request $request)
     {
-        $id = $request->param("id", 0);
-        if ($id == 0) {
-            return $this->responseToJson([],'参数获取失败' , 201);
-        } else {
-            $advisoryModel = new AdvisoryModel();
-            try {
-                $detail = $advisoryModel->alias("a")->field("a.*,b.name")
-                    ->leftJoin("t_advisory_category b", "a.c_id=b.id")
-                    ->where("a.id", $id)->find();
-                return $this->responseToJson($detail,'参数获取成功');
-            } catch (Exception $e) {
-                return $this->responseToJson([],'参数获取失败', 201);
+        if ($request->isPost()) {
+            $radioArr = $request->param("radio");
+            $result = true;
+            if (!empty($radioArr)) {
+                $tId = array_keys($radioArr);
+                $topicUserModel = new TopicUserModel();
+                $data = $topicUserModel ->where("c_id", session("topicCId"))
+                    ->whereIn("t_id", $tId)
+                    ->where("user_code", session("topicUser"))
+                    ->field("id,t_id")->select()->toArray();
+                if (!empty($data)) {
+                    foreach ($data as $key=>$value) {
+                        $data[$key]['td_id'] = $radioArr[$value['t_id']];
+                    }
+                    $result = $this->updateBatch('t_special_topic_user', $data);
+                }
+            }
+            if ($request->param("is_end") == 1) {
+                $c_id = session("topicCId");
+                Session::delete("questionIndex");
+                Session::delete("nextIndex");
+                Session::delete("topicUser");
+                Session::delete("topicCId");
+                if ($result !== false) {
+                    return $this->responseToJson(['url'=> url("index/index"),'c_id' => $c_id],'考核成功');
+                } else {
+                    return $this->responseToJson(['url'=> url("index/index"),'c_id' => $c_id],'考核失败', 201);
+                }
+            } else {
+                session("questionIndex", session("nextIndex"));
+                Log::error( session("questionIndex"));
+                Log::error( $result);
+                if ($result !== false) {
+                    return $this->responseToJson(['q_id'=>session("questionIndex")],'考核成功');
+                } else {
+                    return $this->responseToJson([],'考核失败', 201);
+                }
             }
         }
+        $topicModel = new TopicModel();
+        $topicDetail = new TopicDetailModel();
+        $categoryModel = new CategoryModel();
+        $specialModel = new SpecialModel();
+        $topicUserModel = new TopicUserModel();
+        $sId = session("s_id");
+        $cId = $request->param("c_id", 0);
+        $userCode = $request->param("id",0);
+        $questionIndex = $request->param("q_id",0);
+        if (!Session::has('topicUser') && !Session::has('topicCId')) {
+            session("topicUser", $userCode);
+            session("topicCId", $cId);
+        } else {
+            $cId = session("topicCId");
+            $userCode = session("topicUser");
+        }
+        //1\获取答题类型
+        $type = $specialModel->where("id", $sId)->value("status");
+        $this->assign("type", $type); //1-分制，2-等级制
+        //2、获取当前试题的上级分类名称
+        $steps = new Steps();
+        $title = $categoryModel->where("id", $cId)->value("title");
+        //3、获取上级分类的子分类集（默认为第一个），并判断是否为当前分类下的最后一个子分类集
+        $cateArr = $categoryModel->where("parent_id", $cId)->column("title","id");
+        if (Session::has("questionIndex") && session("questionIndex") == $questionIndex) {
+            $category = session("questionIndex");
+            $b_title = $cateArr[$category];
+        } else {
+            $b_title = reset($cateArr);
+            $category = key($cateArr);
+        }
+        session("questionIndex", $category);
+        foreach ($cateArr as $key=>$value) {
+            $steps->add($key);
+        }
+        $steps->setCurrent($category);
+        session("nextIndex", $steps->getNext());
+        if ($steps->getNext() !== false) {
+            $isEnd = false;
+        } else {
+            $isEnd = true;
+        }
+        //4、获取小分类下的选项集
+        $question = $topicModel->whereIn("c_id", $category)->field("id,title")->select()->toArray();
+        $tIdArr =  array_column($question, "id");
+        $topics = $topicDetail->field("id,content,t_id")->order(['sort' => 'desc','id'=>'asc'])->whereIn("t_id", $tIdArr)->select()->toArray();
+        foreach ($question as $key=>$value) {
+            foreach ($topics as $list=>$info) {
+                if ($info['t_id'] == $value['id']) {
+                    $question[$key]['child'][$list] = $topics[$list];
+                }
+            }
+        }
+        if (empty($question) && empty(session("nextIndex"))) {
+            $category = CategoryModel::where("parent_id",0)->select();
+            $category = json_decode(json_encode($category),true);
+            $this->assign('category', $category);
+            $this->assign('cateNow', $cId);
+            return $this->fetch("./index/index");
+        }
+        //5获取当前问题下的考核
+        $topicUsers = $topicUserModel->whereIn("t_id", $tIdArr)->where("user_code", session("topicUser"))->column("td_id");
+        $this->assign("question", $question);
+        $this->assign("title", $title.'--'.$b_title);
+        $this->assign("c_id", $cId);
+        $this->assign("topicUsers", $topicUsers);
+        $this->assign("is_end", $isEnd);
+        $this->assign("q_id", $questionIndex);
+        return $this->fetch('./index/edit');
     }
 
     public function validation($data, $name)

@@ -11,8 +11,8 @@ namespace app\teacher\model;
 
 use think\model\concern\SoftDelete;
 
-class TopicUserModel extends BaseModel
+class StudentModel extends BaseModel
 {
-    protected $table = "t_special_topic_user";
+    protected $table = "t_sys_student";
 
 }

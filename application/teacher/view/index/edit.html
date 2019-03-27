@@ -60,6 +60,7 @@
     .parsley-errors-list {
         margin: 0px;
     }
+
     .mui-radio input[type=radio]:checked:before {content: '\e442';}
 </style>
 {/block}
@@ -67,7 +68,7 @@
 <!--mui标题-->
 <header class="mui-bar mui-bar-nav">
     <a class="mui-icon mui-action-menu mui-icon-back mui-pull-left" id="go-back"></a>
-    <h1 class="mui-title">{$title}</h1>
+    <h1 class="mui-title">『编辑』{$title}</h1>
 </header>
 <!--mui内容-->
 <div class="mui-content mui-scroll-wrapper">
@@ -77,24 +78,16 @@
             <div class="mui-card">
                 <div class="mui-card-header" style="word-wrap:break-word;display: block;"> <span style="color: red">*</span>第{$key + 1}题 ：{$val.title}</div>
                 <div class="mui-card-content">
-                    <!--<ul class="mui-table-view mui-table-view-radio radio-select">-->
-                        <!---->
-                    <!--</ul>-->
-                        {foreach $val.child as $list=>$info}
-                    <div class="mui-input-row mui-radio mui-left">
+                    {foreach $val.child as $list=>$info}
+                        <div class="mui-input-row mui-radio mui-left">
                             <label>{$info.content}</label>
+                            {in name="$info.id" value="$topicUsers"}
+                            <input name="radio[{$info.t_id}]" type="radio" style="margin: 0px;" checked required value="{$info.id}">
+                            {else}
                             <input name="radio[{$info.t_id}]" type="radio" style="margin: 0px;" required value="{$info.id}">
-                    </div>
-                        {/foreach}
-                    <!--<button type="button" class="mui-btn" style="width: 24%">默认</button>-->
-                    <!--<button type="button" class="mui-btn" style="width: 24%">默认</button>-->
-                    <!--<button type="button" class="mui-btn" style="width: 24%">默认</button>-->
-                    <!--<button type="button" class="mui-btn" style="width: 24%">默认</button>-->
-                    <!--<div class="mui-input-row mui-input-range">-->
-                        <!--<label>滑动选择</label>-->
-                        <!--<input type="range" min="0" max="4" value="0">-->
-                    <!--</div>-->
-                    <!--<div></div>-->
+                            {/in}
+                        </div>
+                    {/foreach}
                 </div>
             </div>
             {/foreach}
@@ -134,7 +127,6 @@
     });
     Parsley.on('form:submit', function(e) {
         var formData = $('form').serializeObject();
-        console.log('formData',formData)
         var error = '';
         if (error !== '') {
             mui.alert(error, '哎呀，出错了', function() {
@@ -150,14 +142,14 @@
             type: 'post',
             dataType: 'json',
             data: formData,
-            url: "{:url('index/detail')}",
+            url: "{:url('index/detailEdit')}",
             complete: function () {
                 // layer.close(index);
             },
             success: function (res) {
                 if (res.code === 200) {
                     console.log('res.data', res.data)
-                    mui.alert(res.msg,'成功', function () {
+                    mui.alert(res.msg,'编辑成功', function () {
                         var url;
                         if (res.data.url) {
                             url = '{:url("index/index",array("c_id"=>"C_id"))}';

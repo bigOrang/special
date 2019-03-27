@@ -1,5 +1,5 @@
 <?php
-namespace app\index\controller;
+namespace app\teacher\controller;
 
 use app\admin\model\SurveyModel;
 use think\Controller;
@@ -13,12 +13,19 @@ class Base extends Controller
     {
         $user_id = input('get.user_id');
         $school_id = input('get.school_id');
-        if (!empty($user_id) && !empty($school_id)) {
+        $client_id = input('get.client_id');
+        if (!empty($user_id) && !empty($school_id) && !empty($client_id)) {
+            if (session('user_id') !== $user_id || session('school_id') !== $school_id) {
+                Session::delete("is_login");
+                Session::delete("grade");
+                Session::delete("class");
+                Session::delete("s_id");
+            }
             session('user_id', $user_id);
             session('school_id', $school_id);
+            session('client_id', $client_id);
             session('auth_status',1);
         } else {
-            Log::alert(\session("user_id"));
             if (empty(session('auth_status'))) {
                 exit($this->fetch('./403',[
                     'msg' => '身份过期，请重新登陆!'
@@ -48,6 +55,8 @@ class Base extends Controller
                 'msg' => '初始化数据失败!'
             ]));
         }
+        if (!Session::has("is_login"))
+            $this->redirect("./teacher/login/index");
     }
     /**
      * @param array $data
@@ -81,7 +90,6 @@ class Base extends Controller
         $tokenHeader = array_merge($tokenHeader, $basicHeader);
         $tokenService['body']['username'] = session("user_id");
         $token = $this->curlRequest($tokenService['url'], $tokenService['method'], $tokenHeader, $tokenService['body'], []);
-        Log::error($token);
         if (!isset($token['access_token'])) {
             exit($this->fetch('./500',[
                 'msg' => '获取token失败'
@@ -202,9 +210,8 @@ class Base extends Controller
 
     /**
      * 消息提示模板
-     * @param string $msg 提示信息
-     * @param string $url 跳转地址
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     * @param string $msg
+     * @return mixed
      */
     protected function alertInfo($msg = '')
     {
@@ -214,13 +221,33 @@ class Base extends Controller
     }
 
 
-    public function checkIsRelease($id)
-    {
-        $status = SurveyModel::whereIn("id", $id)->value("status");
-        if ($status == 1) {
-            return true;
+    protected function updateBatch($tableName = "", $multipleData = array()){
+
+        if( $tableName && !empty($multipleData) ) {
+            // column or fields to update
+            $updateColumn = array_keys($multipleData[0]);
+            $referenceColumn = $updateColumn[0]; //e.g id
+            unset($updateColumn[0]);
+            $whereIn = "";
+
+            $q = "UPDATE ".$tableName." SET ";
+            foreach ( $updateColumn as $uColumn ) {
+                $q .=  $uColumn." = CASE ";
+
+                foreach( $multipleData as $data ) {
+                    $q .= "WHEN ".$referenceColumn." = ".$data[$referenceColumn]." THEN '".$data[$uColumn]."' ";
+                }
+                $q .= "ELSE ".$uColumn." END, ";
+            }
+            foreach( $multipleData as $data ) {
+                $whereIn .= "'".$data[$referenceColumn]."', ";
+            }
+            $q = rtrim($q, ", ")." WHERE ".$referenceColumn." IN (".  rtrim($whereIn, ', ').")";
+            // Update
+            return Db::connect(session('db-config_' . session("school_id")))->execute(DB::raw($q));
         } else {
-            exit($this->alertInfo('当前问卷已发布，无法再次添加/修改'));
+            return false;
         }
     }
+
 }
