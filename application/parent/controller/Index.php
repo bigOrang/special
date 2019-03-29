@@ -1,12 +1,12 @@
 <?php
-namespace app\teacher\controller;
+namespace app\parent\controller;
 
-use app\teacher\model\CategoryModel;
-use app\teacher\model\SpecialModel;
-use app\teacher\model\TopicDetailModel;
-use app\teacher\model\TopicModel;
-use app\teacher\model\StudentModel;
-use app\teacher\model\TopicUserModel;
+use app\parent\model\CategoryModel;
+use app\parent\model\SpecialModel;
+use app\parent\model\TopicDetailModel;
+use app\parent\model\TopicModel;
+use app\parent\model\StudentModel;
+use app\parent\model\TopicUserModel;
 use app\common\Steps;
 use think\Db;
 use think\Exception;
@@ -18,10 +18,10 @@ class Index extends Base
 {
     public function index(Request $request)
     {
-        Session::delete("teacher_questionIndex");
-        Session::delete("teacher_nextIndex");
-        Session::delete("teacher_topicUser");
-        Session::delete("teacher_topicCId");
+        Session::delete("parent_questionIndex");
+        Session::delete("parent_nextIndex");
+        Session::delete("parent_topicUser");
+        Session::delete("parent_topicCId");
         $c_id = $request->param('c_id',0);
         $category = CategoryModel::where("parent_id",0)->select();
         $category = json_decode(json_encode($category),true);
@@ -45,9 +45,8 @@ class Index extends Base
             $childSql = $topicUserModel->where("c_id", $requestData['category'])->field("id,c_id,td_id,t_id,user_code")->buildSql();
             $query = $studentModel->alias("a")
                 ->leftJoin("{$childSql} b","a.code=b.user_code")
-                ->leftJoin("t_sys_class c","c.id=a.class_id")
-                ->where("c.grade_no", session("teacher_grade"))
-                ->where("c.class_no", session("teacher_class"))
+                ->leftJoin("t_wx_parent_bind d","d.stu_union_id=a.code")
+                ->where("d.tch_account_id", session("parent_account_id"))
                 ->order("a.code");
             if (isset($requestData['search']) && !empty(trim($requestData['search']))) {
                 $query->where("a.name", "LIKE","%".$requestData['search']."%");
@@ -70,9 +69,9 @@ class Index extends Base
             if (!empty($radioArr)) {
                 $tId = array_keys($radioArr);
                 $topicUserModel = new TopicUserModel();
-                $data = $topicUserModel ->where("c_id", session("teacher_topicCId"))
+                $data = $topicUserModel ->where("c_id", session("parent_topicCId"))
                     ->whereIn("t_id", $tId)
-                    ->where("user_code", session("teacher_topicUser"))
+                    ->where("user_code", session("parent_topicUser"))
                     ->field("id,t_id")->select()->toArray();
                 if (!empty($data)) {
                     foreach ($data as $key=>$value) {
@@ -83,29 +82,29 @@ class Index extends Base
                     foreach ($radioArr as $key =>$value) {
                         $insertArr[$key] = [
                             'td_id' => $value,
-                            'c_id' => session("teacher_topicCId"),
+                            'c_id' => session("parent_topicCId"),
                             't_id' => $key,
-                            'user_code' => session("teacher_topicUser")
+                            'user_code' => session("parent_topicUser")
                         ];
                     }
                     $result = $topicUserModel->insertAll($insertArr);
                 }
             }
             if ($request->param("is_end") == 1) {
-                $c_id = session("teacher_topicCId");
-                Session::delete("teacher_questionIndex");
-                Session::delete("teacher_nextIndex");
-                Session::delete("teacher_topicUser");
-                Session::delete("teacher_topicCId");
+                $c_id = session("parent_topicCId");
+                Session::delete("parent_questionIndex");
+                Session::delete("parent_nextIndex");
+                Session::delete("parent_topicUser");
+                Session::delete("parent_topicCId");
                 if ($result !== false) {
                     return $this->responseToJson(['url'=> url("index/index"),'c_id' => $c_id],'考核成功');
                 } else {
                     return $this->responseToJson(['url'=> url("index/index"),'c_id' => $c_id],'考核失败', 201);
                 }
             } else {
-                session("teacher_questionIndex", session("teacher_nextIndex"));
+                session("parent_questionIndex", session("parent_nextIndex"));
                 if ($result !== false) {
-                    return $this->responseToJson(['q_id'=>session("teacher_questionIndex")],'考核成功');
+                    return $this->responseToJson(['q_id'=>session("parent_questionIndex")],'考核成功');
                 } else {
                     return $this->responseToJson([],'考核失败', 201);
                 }
@@ -116,16 +115,16 @@ class Index extends Base
             $categoryModel = new CategoryModel();
             $specialModel = new SpecialModel();
             $topicUserModel = new TopicUserModel();
-            $sId = session("teacher_s_id");
+            $sId = session("parent_s_id");
             $cId = $request->param("c_id", 0);
             $userCode = $request->param("id",0);
             $questionIndex = $request->param("q_id",0);
-            if (!Session::has('teacher_topicUser') && !Session::has('teacher_topicCId')) {
-                session("teacher_topicUser", $userCode);
-                session("teacher_topicCId", $cId);
+            if (!Session::has('parent_topicUser') && !Session::has('parent_topicCId')) {
+                session("parent_topicUser", $userCode);
+                session("parent_topicCId", $cId);
             } else {
-                $cId = session("teacher_topicCId");
-                $userCode = session("teacher_topicUser");
+                $cId = session("parent_topicCId");
+                $userCode = session("parent_topicUser");
             }
             //1、获取当前试题的答题方式
             $type = $specialModel->where("id", $sId)->value("status");
@@ -136,20 +135,20 @@ class Index extends Base
             $title = $categoryModel->where("id", $cId)->value("title");
             //3、获取上级分类的子分类集（默认为第一个），并判断是否为当前分类下的最后一个子分类集
             $cateArr = $categoryModel->where("parent_id", $cId)->column("title","id");
-            if (Session::has("teacher_questionIndex") && session("teacher_questionIndex") == $questionIndex) {
-                $category = session("teacher_questionIndex");
+            if (Session::has("parent_questionIndex") && session("parent_questionIndex") == $questionIndex) {
+                $category = session("parent_questionIndex");
                 $b_title = $cateArr[$category];
-                session("teacher_questionIndex", $category);
+                session("parent_questionIndex", $category);
             } else {
                 $b_title = reset($cateArr);
                 $category = key($cateArr);
-                session("teacher_questionIndex", $category);
+                session("parent_questionIndex", $category);
             }
             foreach ($cateArr as $key=>$value) {
                 $steps->add($key);
             }
             $steps->setCurrent($category);
-            session("teacher_nextIndex", $steps->getNext());
+            session("parent_nextIndex", $steps->getNext());
             if ($steps->getNext() !== false) {
                 $isEnd = false;
             } else {
@@ -166,7 +165,7 @@ class Index extends Base
                     }
                 }
             }
-            $findDetail = $topicUserModel->where("c_id", $cId)->where("user_code", session("teacher_topicUser"))->whereIn("t_id", $tIdArr)->find();
+            $findDetail = $topicUserModel->where("c_id", $cId)->where("user_code", session("parent_topicUser"))->whereIn("t_id", $tIdArr)->find();
             if (empty($findDetail)) {
                 $insertAll = [];
                 foreach ($tIdArr as $key=>$value) {
@@ -179,7 +178,7 @@ class Index extends Base
                 }
                 $topicUserModel->insertAll($insertAll);
             }
-            if (empty($question) && empty(session("teacher_nextIndex"))) {
+            if (empty($question) && empty(session("parent_nextIndex"))) {
                 $category = CategoryModel::where("parent_id",0)->select();
                 $category = json_decode(json_encode($category),true);
                 $this->assign('category', $category);
@@ -204,9 +203,9 @@ class Index extends Base
             if (!empty($radioArr)) {
                 $tId = array_keys($radioArr);
                 $topicUserModel = new TopicUserModel();
-                $data = $topicUserModel ->where("c_id", session("teacher_topicCId"))
+                $data = $topicUserModel ->where("c_id", session("parent_topicCId"))
                     ->whereIn("t_id", $tId)
-                    ->where("user_code", session("teacher_topicUser"))
+                    ->where("user_code", session("parent_topicUser"))
                     ->field("id,t_id")->select()->toArray();
                 if (!empty($data)) {
                     foreach ($data as $key=>$value) {
@@ -216,20 +215,20 @@ class Index extends Base
                 }
             }
             if ($request->param("is_end") == 1) {
-                $c_id = session("teacher_topicCId");
-                Session::delete("teacher_questionIndex");
-                Session::delete("teacher_nextIndex");
-                Session::delete("teacher_topicUser");
-                Session::delete("teacher_topicCId");
+                $c_id = session("parent_topicCId");
+                Session::delete("parent_questionIndex");
+                Session::delete("parent_nextIndex");
+                Session::delete("parent_topicUser");
+                Session::delete("parent_topicCId");
                 if ($result !== false) {
                     return $this->responseToJson(['url'=> url("index/index"),'c_id' => $c_id],'考核成功');
                 } else {
                     return $this->responseToJson(['url'=> url("index/index"),'c_id' => $c_id],'考核失败', 201);
                 }
             } else {
-                session("teacher_questionIndex", session("teacher_nextIndex"));
+                session("parent_questionIndex", session("parent_nextIndex"));
                 if ($result !== false) {
-                    return $this->responseToJson(['q_id'=>session("teacher_questionIndex")],'考核成功');
+                    return $this->responseToJson(['q_id'=>session("parent_questionIndex")],'考核成功');
                 } else {
                     return $this->responseToJson([],'考核失败', 201);
                 }
@@ -240,16 +239,16 @@ class Index extends Base
         $categoryModel = new CategoryModel();
         $specialModel = new SpecialModel();
         $topicUserModel = new TopicUserModel();
-        $sId = session("teacher_s_id");
+        $sId = session("parent_s_id");
         $cId = $request->param("c_id", 0);
         $userCode = $request->param("id",0);
         $questionIndex = $request->param("q_id",0);
-        if (!Session::has('teacher_topicUser') && !Session::has('teacher_topicCId')) {
-            session("teacher_topicUser", $userCode);
-            session("teacher_topicCId", $cId);
+        if (!Session::has('parent_topicUser') && !Session::has('parent_topicCId')) {
+            session("parent_topicUser", $userCode);
+            session("parent_topicCId", $cId);
         } else {
-            $cId = session("teacher_topicCId");
-            $userCode = session("teacher_topicUser");
+            $cId = session("parent_topicCId");
+            $userCode = session("parent_topicUser");
         }
         //1\获取答题类型
         $type = $specialModel->where("id", $sId)->value("status");
@@ -259,19 +258,19 @@ class Index extends Base
         $title = $categoryModel->where("id", $cId)->value("title");
         //3、获取上级分类的子分类集（默认为第一个），并判断是否为当前分类下的最后一个子分类集
         $cateArr = $categoryModel->where("parent_id", $cId)->column("title","id");
-        if (Session::has("teacher_questionIndex") && session("teacher_questionIndex") == $questionIndex) {
-            $category = session("teacher_questionIndex");
+        if (Session::has("parent_questionIndex") && session("parent_questionIndex") == $questionIndex) {
+            $category = session("parent_questionIndex");
             $b_title = $cateArr[$category];
         } else {
             $b_title = reset($cateArr);
             $category = key($cateArr);
         }
-        session("teacher_questionIndex", $category);
+        session("parent_questionIndex", $category);
         foreach ($cateArr as $key=>$value) {
             $steps->add($key);
         }
         $steps->setCurrent($category);
-        session("teacher_nextIndex", $steps->getNext());
+        session("parent_nextIndex", $steps->getNext());
         if ($steps->getNext() !== false) {
             $isEnd = false;
         } else {
@@ -288,7 +287,7 @@ class Index extends Base
                 }
             }
         }
-        if (empty($question) && empty(session("teacher_nextIndex"))) {
+        if (empty($question) && empty(session("parent_nextIndex"))) {
             $category = CategoryModel::where("parent_id",0)->select();
             $category = json_decode(json_encode($category),true);
             $this->assign('category', $category);
@@ -296,7 +295,7 @@ class Index extends Base
             return $this->fetch("./index/index");
         }
         //5获取当前问题下的考核
-        $topicUsers = $topicUserModel->whereIn("t_id", $tIdArr)->where("user_code", session("teacher_topicUser"))->column("td_id");
+        $topicUsers = $topicUserModel->whereIn("t_id", $tIdArr)->where("user_code", session("parent_topicUser"))->column("td_id");
         $this->assign("question", $question);
         $this->assign("title", $title.'--'.$b_title);
         $this->assign("c_id", $cId);

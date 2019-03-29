@@ -1,8 +1,8 @@
 <?php
-namespace app\teacher\controller;
+namespace app\parent\controller;
 
-use app\teacher\model\SpecialModel;
-use app\teacher\model\ClassModel;
+use app\parent\model\SpecialModel;
+use app\parent\model\ClassModel;
 use think\Controller;
 use think\facade\Session;
 use think\Request;
@@ -11,7 +11,7 @@ class Login extends Controller
 {
     public function index()
     {
-        $userId = session("teacher_user_id");
+        $userId = session("parent_user_id");
         $classModel = new ClassModel();
         $specialModel = new SpecialModel();
         $data = $classModel->alias("a")->where("supervisor1_code", $userId)
@@ -28,7 +28,7 @@ class Login extends Controller
                 }
             }
         }
-        $topic = $specialModel->where("type",1)->field("id as value,title as text")->select()->toArray();
+        $topic = $specialModel->where("type",2)->field("id as value,title as text")->select()->toArray();
         $this->assign("topicData", json_encode($topic, 320));
         $this->assign("gradeData", json_encode($grade, 320));
         return $this->fetch('./login');
@@ -38,10 +38,9 @@ class Login extends Controller
     {
         if ($request->isPost()) {
             $requestData = $request->param();
-            session("teacher_is_login",1);
-            session("teacher_grade", $requestData['grade']);
-            session("teacher_class", $requestData['class']);
-            session("teacher_s_id", $requestData['topic']);
+            session("parent_is_login",1);
+            session("parent_account_id", $requestData['account_id']);
+            session("parent_s_id", $requestData['topic']);
             return $this->responseToJson([],'success', 200);
         } else {
             return $this->responseToJson([],'非法的访问方式', 201);
@@ -50,11 +49,10 @@ class Login extends Controller
 
     public function out()
     {
-        Session::delete("teacher_is_login");
-        Session::delete("teacher_grade");
-        Session::delete("teacher_class");
-        Session::delete("teacher_s_id");
-        return redirect('./teacher/login/index');
+        Session::delete("parent_is_login");
+        Session::delete("parent_account_id");
+        Session::delete("parent_s_id");
+        return redirect('./login');
     }
 
     public function responseToJson($data = [], $msg = 'ok', $code = 200, $default = true) {

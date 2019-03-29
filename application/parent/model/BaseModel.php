@@ -1,6 +1,6 @@
 <?php
 
-namespace app\teacher\model;
+namespace app\parent\model;
 
 use think\Db;
 use think\Model;
@@ -11,8 +11,8 @@ class BaseModel extends Model
     protected $connection = '';
     public function __construct($data = [])
     {
-        self::$school_id = session('teacher_school_id');
-        $this->connection = session('teacher_db-config_' . self::$school_id);
+        self::$school_id = session('parent_school_id');
+        $this->connection = session('parent_db-config_' . self::$school_id);
         parent::__construct($data);
     }
 }

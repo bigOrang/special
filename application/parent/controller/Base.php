@@ -1,5 +1,5 @@
 <?php
-namespace app\teacher\controller;
+namespace app\parent\controller;
 
 use think\Controller;
 use think\Db;
@@ -14,25 +14,25 @@ class Base extends Controller
         $school_id = input('get.school_id');
         $client_id = input('get.client_id');
         if (!empty($user_id) && !empty($school_id) && !empty($client_id)) {
-            if (session('teacher_user_id') !== $user_id || session('teacher_school_id') !== $school_id) {
-                Session::delete("teacher_is_login");
-                Session::delete("teacher_grade");
-                Session::delete("teacher_class");
-                Session::delete("teacher_s_id");
+            if (session('parent_user_id') !== $user_id || session('parent_school_id') !== $school_id) {
+                Session::delete("parent_is_login");
+//                Session::delete("parent_grade");
+                Session::delete("parent_account_id");
+                Session::delete("parent_s_id");
             }
-            session('teacher_user_id', $user_id);
-            session('teacher_school_id', $school_id);
-            session('teacher_client_id', $client_id);
-            session('teacher_auth_status',1);
+            session('parent_user_id', $user_id);
+            session('parent_school_id', $school_id);
+            session('parent_client_id', $client_id);
+            session('parent_auth_status',1);
         } else {
-            if (empty(session('teacher_auth_status'))) {
+            if (empty(session('parent_auth_status'))) {
                 exit($this->fetch('./403',[
                     'msg' => '身份过期，请重新登陆!'
                 ]));
             }
         }
         if (empty($school_id)) {
-            $school_id = session('teacher_school_id');
+            $school_id = session('parent_school_id');
         }
         $db = Db::table('t_sys_mod_biz_db')->where('school_id', $school_id)->find();
         if ($db) {
@@ -48,14 +48,14 @@ class Base extends Controller
                 'charset'         => 'utf8',
                 'prefix'          => '',
             ];
-            session('teacher_db-config_'.$school_id, $config);
+            session('parent_db-config_'.$school_id, $config);
         } else {
             exit($this->fetch('./404',[
                 'msg' => '初始化数据失败!'
             ]));
         }
-        if (!Session::has("teacher_is_login"))
-            $this->redirect("./teacher/login/index");
+        if (!Session::has("parent_is_login"))
+            $this->redirect("./parent/login/index");
     }
     /**
      * @param array $data
@@ -85,9 +85,9 @@ class Base extends Controller
         $tokenService = config('api.getToken');
         $userInfoService = config('api.getUserInfo');
         $basicHeader[] = "Authorization: Basic ".base64_encode("{$tokenService['basic']['username']}:{$tokenService['basic']['password']}"); //添加头，在name和pass处填写对应账号密码
-        $tokenHeader = ['school_id:' . session("teacher_school_id")];
+        $tokenHeader = ['school_id:' . session("parent_school_id")];
         $tokenHeader = array_merge($tokenHeader, $basicHeader);
-        $tokenService['body']['username'] = session("teacher_user_id");
+        $tokenService['body']['username'] = session("parent_user_id");
         $token = $this->curlRequest($tokenService['url'], $tokenService['method'], $tokenHeader, $tokenService['body'], []);
         if (!isset($token['access_token'])) {
             exit($this->fetch('./500',[
@@ -97,7 +97,7 @@ class Base extends Controller
             $bearerHeader[] = "Authorization: Bearer ".$token['access_token'];
             $userInfoHeader = [
                 'Content-Type:' . $userInfoService['header']['Content-Type'],
-                'school_id:' . session("teacher_school_id"),
+                'school_id:' . session("parent_school_id"),
                 'mdc_value:' . $userInfoService['header']['mdc_value'],
                 'client_id:' . $userInfoService['header']['client_id'],
             ];
@@ -243,7 +243,7 @@ class Base extends Controller
             }
             $q = rtrim($q, ", ")." WHERE ".$referenceColumn." IN (".  rtrim($whereIn, ', ').")";
             // Update
-            return Db::connect(session('teacher_db-config_' . session("teacher_school_id")))->execute(DB::raw($q));
+            return Db::connect(session('parent_db-config_' . session("parent_school_id")))->execute(DB::raw($q));
         } else {
             return false;
         }
