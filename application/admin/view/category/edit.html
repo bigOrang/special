@@ -20,14 +20,6 @@
     }
 </style>
 {/block}
-{block name="script"}
-<script src="__STATIC__/js/plugins/multiselect/js/jquery.multi-select.js"></script>
-<script src="__STATIC__/js/plugins/jquery-quicksearch/jquery.quicksearch.js"></script>
-<script src="__STATIC__/js/plugins/validate/jquery.validate.min.js"></script>
-<script src="__STATIC__/js/plugins/validate/messages_zh.min.js"></script>
-<script src="__STATIC__/js/plugins/select2/select2.min.js"></script>
-<script src="__STATIC__/js/plugins/select2/select2_locale_zh-CN.js"></script>
-{/block}
 {block name="body"}
 
 <div class="row layui-layout-body">
@@ -47,7 +39,6 @@
                                     <option value="{$vo.id}" >&emsp;&emsp;&emsp;{$vo.title}</option>
                                 {/if}
                             {/foreach}
-
                         </select>
                     </div>
                 </div>
@@ -69,6 +60,14 @@
         </div>
     </div>
 </div>
+{/block}
+{block name="script"}
+<script src="__STATIC__/js/plugins/multiselect/js/jquery.multi-select.js"></script>
+<script src="__STATIC__/js/plugins/jquery-quicksearch/jquery.quicksearch.js"></script>
+<script src="__STATIC__/js/plugins/validate/jquery.validate.min.js"></script>
+<script src="__STATIC__/js/plugins/validate/messages_zh.min.js"></script>
+<script src="__STATIC__/js/plugins/select2/select2.min.js"></script>
+<script src="__STATIC__/js/plugins/select2/select2_locale_zh-CN.js"></script>
 <script>
     $(".select2").select2();
     jQuery(document).ready(function() {

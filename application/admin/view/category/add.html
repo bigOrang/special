@@ -20,20 +20,12 @@
     }
 </style>
 {/block}
-{block name="script"}
-<script src="__STATIC__/js/plugins/multiselect/js/jquery.multi-select.js"></script>
-<script src="__STATIC__/js/plugins/jquery-quicksearch/jquery.quicksearch.js"></script>
-<script src="__STATIC__/js/plugins/validate/jquery.validate.min.js"></script>
-<script src="__STATIC__/js/plugins/validate/messages_zh.min.js"></script>
-<script src="__STATIC__/js/plugins/select2/select2.min.js"></script>
-<script src="__STATIC__/js/plugins/select2/select2_locale_zh-CN.js"></script>
-{/block}
 {block name="body"}
 
 <div class="row layui-layout-body">
     <div class="ibox float-e-margins">
         <div class="ibox-content">
-            <form class="form-horizontal m-t" data-parsley-validate id="commentForm">
+            <form class="form-horizontal m-t" data-parsley-validate="">
                 <div class="form-group">
                     <label class="col-sm-3 control-label">父级分类 <span style="color:red">*</span></label>
                     <div class="col-sm-8">
@@ -63,6 +55,15 @@
         </div>
     </div>
 </div>
+{/block}
+
+{block name="script"}
+<script src="__STATIC__/js/plugins/multiselect/js/jquery.multi-select.js"></script>
+<script src="__STATIC__/js/plugins/jquery-quicksearch/jquery.quicksearch.js"></script>
+<script src="__STATIC__/js/plugins/validate/jquery.validate.min.js"></script>
+<script src="__STATIC__/js/plugins/validate/messages_zh.min.js"></script>
+<script src="__STATIC__/js/plugins/select2/select2.min.js"></script>
+<script src="__STATIC__/js/plugins/select2/select2_locale_zh-CN.js"></script>
 <script>
     $(".select2").select2();
     jQuery(document).ready(function() {
@@ -73,7 +74,7 @@
     });
     Parsley.on('form:submit', function(e) {
         var formData = $('form').serializeObject();
-        return ajaxPostData(formData, "{:url('category/add')}",true);
+        return ajaxPostData(formData, "{:url('category/add')}");
     });
 </script>
 {/block}

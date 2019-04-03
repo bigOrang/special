@@ -11,7 +11,13 @@ class Login extends Controller
 {
     public function index()
     {
-        $userId = session("parent_user_id");
+        if (Session::has("parent_user_id")) {
+            $userId = session("parent_user_id");
+        } else {
+            exit($this->fetch('./403',[
+                'msg' => '身份过期，请重新登陆!'
+            ]));
+        }
         $classModel = new ClassModel();
         $specialModel = new SpecialModel();
         $data = $classModel->alias("a")->where("supervisor1_code", $userId)

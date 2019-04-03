@@ -37,9 +37,10 @@ class Category extends Base
                     if (isset($searchData['category']) && !empty($searchData['category']))
                         $query->where('a.id', $searchData['category']);
                 })
-                    ->field("a.*,b.id AS parent_id,b.title AS parent_title,c.title as s_title")
+                    ->field("a.*,CASE WHEN a.parent_id <> 0 THEN  CONCAT('└└└',a.title) ELSE a.title END AS new_title,b.id AS parent_id,b.title AS parent_title,c.title as s_title")
                     ->leftJoin("t_special_category b","b.id=a.parent_id")
                     ->leftJoin("t_special c","a.s_id=c.id")
+                    ->order(['a.id'=>'asc','b.parent_id'=>'desc'])
                     ->paginate($limit);
                 $data = json_decode(json_encode($data),true);
             } catch (Exception $exception) {

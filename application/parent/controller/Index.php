@@ -23,7 +23,8 @@ class Index extends Base
         Session::delete("parent_topicUser");
         Session::delete("parent_topicCId");
         $c_id = $request->param('c_id',0);
-        $category = CategoryModel::where("parent_id",0)->select();
+        Log::error($c_id);
+        $category = CategoryModel::where("parent_id",0)->where("s_id", session("parent_s_id"))->select();
         $category = json_decode(json_encode($category),true);
         $this->assign('category', $category);
         if ($c_id != 0) {
@@ -116,9 +117,10 @@ class Index extends Base
             $specialModel = new SpecialModel();
             $topicUserModel = new TopicUserModel();
             $sId = session("parent_s_id");
-            $cId = $request->param("c_id", 0);
-            $userCode = $request->param("id",0);
-            $questionIndex = $request->param("q_id",0);
+            $cId = $request->param("c_id", null);
+            $userCode = $request->param("id",00);
+            $questionIndex = $request->param("q_id",00);
+            $cId != 0 ? : $cId = null;
             if (!Session::has('parent_topicUser') && !Session::has('parent_topicCId')) {
                 session("parent_topicUser", $userCode);
                 session("parent_topicCId", $cId);
@@ -144,15 +146,20 @@ class Index extends Base
                 $category = key($cateArr);
                 session("parent_questionIndex", $category);
             }
-            foreach ($cateArr as $key=>$value) {
-                $steps->add($key);
-            }
-            $steps->setCurrent($category);
-            session("parent_nextIndex", $steps->getNext());
-            if ($steps->getNext() !== false) {
-                $isEnd = false;
-            } else {
+            if (empty($cateArr)) {
                 $isEnd = true;
+                session("parent_nextIndex", false);
+            } else {
+                foreach ($cateArr as $key=>$value) {
+                    $steps->add($key);
+                }
+                $steps->setCurrent($category);
+                session("parent_nextIndex", $steps->getNext());
+                if ($steps->getNext() !== false) {
+                    $isEnd = false;
+                } else {
+                    $isEnd = true;
+                }
             }
             //4、获取小分类下的选项集
             $question = $topicModel->whereIn("c_id", $category)->field("id,title")->select()->toArray();
@@ -179,7 +186,7 @@ class Index extends Base
                 $topicUserModel->insertAll($insertAll);
             }
             if (empty($question) && empty(session("parent_nextIndex"))) {
-                $category = CategoryModel::where("parent_id",0)->select();
+                $category = CategoryModel::where("parent_id",0)->where("s_id", session("parent_s_id"))->select();
                 $category = json_decode(json_encode($category),true);
                 $this->assign('category', $category);
                 $this->assign('cateNow', $cId);
@@ -240,9 +247,10 @@ class Index extends Base
         $specialModel = new SpecialModel();
         $topicUserModel = new TopicUserModel();
         $sId = session("parent_s_id");
-        $cId = $request->param("c_id", 0);
+        $cId = $request->param("c_id", null);
         $userCode = $request->param("id",0);
         $questionIndex = $request->param("q_id",0);
+        $cId != 0 ? : $cId = null;
         if (!Session::has('parent_topicUser') && !Session::has('parent_topicCId')) {
             session("parent_topicUser", $userCode);
             session("parent_topicCId", $cId);
@@ -266,15 +274,20 @@ class Index extends Base
             $category = key($cateArr);
         }
         session("parent_questionIndex", $category);
-        foreach ($cateArr as $key=>$value) {
-            $steps->add($key);
-        }
-        $steps->setCurrent($category);
-        session("parent_nextIndex", $steps->getNext());
-        if ($steps->getNext() !== false) {
-            $isEnd = false;
-        } else {
+        if (empty($cateArr)) {
             $isEnd = true;
+            session("parent_nextIndex", false);
+        } else {
+            foreach ($cateArr as $key=>$value) {
+                $steps->add($key);
+            }
+            $steps->setCurrent($category);
+            session("parent_nextIndex", $steps->getNext());
+            if ($steps->getNext() !== false) {
+                $isEnd = false;
+            } else {
+                $isEnd = true;
+            }
         }
         //4、获取小分类下的选项集
         $question = $topicModel->whereIn("c_id", $category)->field("id,title")->select()->toArray();
@@ -288,7 +301,7 @@ class Index extends Base
             }
         }
         if (empty($question) && empty(session("parent_nextIndex"))) {
-            $category = CategoryModel::where("parent_id",0)->select();
+            $category = CategoryModel::where("parent_id",0)->where("s_id", session("parent_s_id"))->select();
             $category = json_decode(json_encode($category),true);
             $this->assign('category', $category);
             $this->assign('cateNow', $cId);

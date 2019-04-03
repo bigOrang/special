@@ -47,10 +47,11 @@
     </div>
 </div>
 {if isset($cateNow)}
-<script>var cateNow = "{$cateNow}"</script>
+<script>var cateNow = "{$cateNow}";</script>
 {else /}
-<script>var cateNow = "0"</script>
+<script>var cateNow = "0";</script>
 {/if}
+<script>var category = "0"</script>
 <div id="popover" class="mui-popover">
     <ul class="mui-table-view mui-table-view-radio">
         <!--<li class="mui-table-view-cell mui-selected" data-content="0" id="all-check">-->
@@ -59,7 +60,7 @@
         {foreach $category as $key=>$value}
             {if $key==0}
             <li class="mui-table-view-cell mui-selected category-old category-old-{$value.id}" data-content="{$value.id}">
-                <script>var category = "{$value.id}"</script>
+                <script>category = "{$value.id}"</script>
             {else/}
             <li class="mui-table-view-cell category-old category-old-{$value.id}" data-content="{$value.id}">
             {/if}
@@ -98,6 +99,9 @@
                 val.setAttribute("class",content);
             });
             $(".category-old-" + cateNow).attr("class","mui-table-view-cell mui-selected category-old");
+        }
+        if (cateNow == 'null') {
+            mui.alert('您已填写完当前分类下的考核或当前分类下考核题目为空', '分类内容为空');
         }
         mui('.mui-scroll-wrapper').scroll();
         function pullupRefresh() {
