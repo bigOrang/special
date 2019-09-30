@@ -15,9 +15,12 @@
     white-space: nowrap;/*不换行*/
     text-overflow:ellipsis;/*超出部分文字以...显示*/
 }
-    #add_advisory {
-        border: 1px black;
-    }
+.mui-content {
+    background-color: #fff !important;
+}
+#add_advisory {
+    border: 1px black;
+}
 </style>
 {/block}
 {block name="body"}
@@ -29,42 +32,31 @@
             <div id="add_advisory">
                 <a class="mui-action-back mui-icon mui-icon-back mui-pull-left add-advisory"></a>
             </div>
-            <h1 class="mui-title" id="title">请选择需要考核的班级和年级</h1>
+            <h1 class="mui-title" id="title">测评统计</h1>
         </header>
-        <!-- 主页面内容容器 -->
-        <div id="refreshContainer" class="mui-content mui-scroll-wrapper">
-            <div class="mui-scroll">
-                <form>
-                    <div class="mui-input-row mui-search" id="input-search">
-                        <input type="search" id="search" class="mui-input-clear" placeholder="搜索"  autocomplete="off">
-                    </div>
-                </form>
-                <!-- 主界面具体展示内容 -->
-                <ul class="mui-table-view mui-table-view-chevron" id="main-content">
-                </ul>
-            </div>
-        </div>
         <div class="mui-content mui-scroll-wrapper">
             <div class="mui-scroll">
                 <!-- 主界面具体展示内容 -->
                 <form class="mui-input-group" data-parsley-validate="">
                     <div class="mui-input-row">
-                        <label>年级/班级 <span style="color: red">*</span></label>
+                        <label>年级/班级</label>
                         <input type="hidden" name="grade" id="grade">
                         <input type="hidden" name="class" id="class">
-                        <input type="text" id='gradePicker' class="mui-input-clear mui-col-sm-3" placeholder="请选择班级">
+                        <input type="text" id='gradePicker' class="mui-input-clear mui-col-sm-3" placeholder="请选择年级 / 班级">
                     </div>
                     <div class="mui-input-row">
-                        <label>试卷 <span style="color: red">*</span></label>
+                        <label>试卷</label>
                         <input type="hidden" name="topic" id="topic">
-                        <input type="text" id='topicPicker' class="mui-input-clear mui-col-sm-3" placeholder="请选择试卷">
+                        <input type="text" id='topicPicker' class="mui-input-clear mui-col-sm-3" placeholder="请选择评测试题">
                     </div>
-                    <div class="mui-button-row">
+
+                    <div class="mui-button-row" style="width: 90%;margin: 0 auto;">
                         <input type="hidden" value="{$gradeData}" id="gradeData">
                         <input type="hidden" value="{$topicData}" id="topicData">
-                        <button type="submit" class="mui-btn mui-btn-primary" >确认</button>
-                        <button type="reset" class="mui-btn mui-btn-danger" >取消</button>
+                        <button type="submit" class="mui-btn mui-btn-success mui-btn-block" style="line-height: 0px;">搜索</button>
                     </div>
+                    <div class="" style="text-align: center;margin-top: 10px;position: inherit;top: 15px;display: block;"><a style="color: #666666;text-decoration: underline;">七年级8班某某测评统计结束</a></div>
+                    <div id="container" style="height: 100%;min-height: 400px;"></div>
                 </form>
             </div>
         </div>
@@ -73,6 +65,7 @@
 </div>
 {/block}
 {block name="script"}
+<script type="text/javascript" src="__STATIC__/js/echarts.min.js"></script>
 <script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.picker.js"></script>
 <script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.poppicker.js"></script>
 <script>
@@ -103,13 +96,14 @@
             type: 'post',
             dataType: 'json',
             data: formData,
-            url: "{:url('login/setGrade')}",
+            url: "{:url('login/getCharts')}",
             complete: function () {
                 layer.close(index);
             },
             success: function (res) {
                 if (res.code === 200) {
-                    window.location.href = '{:url("index/index")}';
+                    buildCharts(res.data)
+                    // window.location.href = '{:url("index/index")}';
                 } else {
                     mui.alert('获取数据错误', '哎呀，出错了');
                 }
@@ -184,5 +178,61 @@
 //            }, false);
         });
     })(mui, document);
+</script>
+<script type="text/javascript">
+    function buildCharts(data)
+    {
+        var dom = document.getElementById("container");
+        // var myChart = echarts.init(dom, null,  {renderer: 'svg'});
+        var myChart = echarts.init(dom);
+        var app = {};
+        option = null;
+        option = {
+            title : {
+                // text: '七年级8班某某测评统计结束',
+                x:'center'
+            },
+            tooltip : {
+                trigger: 'item',
+                formatter: "{a} <br/>{b} : {c} ({d}%)"
+            },
+            legend: {
+                // type: 'scroll',
+                // orient: 'vertical',
+                bottom: 20,
+                left:'center',
+                // right: 50,
+                data: data,
+                selected: data
+            },
+            series : [
+                {
+                    name: '姓名',
+                    type: 'pie',
+                    radius : '75%',
+                    center: ['50%', '40%'],
+                    data: data,
+                    itemStyle: {
+                        emphasis: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    },
+                    label: {
+                        normal: {
+                            show: true,
+                            position: 'inner'
+                        }
+                    }
+                }
+            ]
+        };
+
+        if (option && typeof option === "object") {
+            myChart.setOption(option, true);
+        }
+    }
+
 </script>
 {/block}

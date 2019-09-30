@@ -13,7 +13,8 @@ class Base extends Controller
         $user_id = input('get.user_id');
         $school_id = input('get.school_id');
         $client_id = input('get.client_id');
-        if (!empty($user_id) && !empty($school_id) && !empty($client_id)) {
+        $account_id = input('get.account_id');
+        if (!empty($user_id) && !empty($school_id) && !empty($client_id) && !empty($account_id)) {
             if (session('parent_user_id') !== $user_id || session('parent_school_id') !== $school_id) {
                 Session::delete("parent_is_login");
 //                Session::delete("parent_grade");
@@ -21,6 +22,7 @@ class Base extends Controller
                 Session::delete("parent_s_id");
             }
             session('parent_user_id', $user_id);
+            session('parent_account_id', $account_id);
             session('parent_school_id', $school_id);
             session('parent_client_id', $client_id);
             session('parent_auth_status',1);

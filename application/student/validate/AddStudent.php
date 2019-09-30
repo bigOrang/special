@@ -9,7 +9,7 @@
 // | 开源协议 ( http://www.apache.org/licenses/LICENSE-2.0 )
 // +----------------------------------------------------------------------
 
-namespace app\admin\validate;
+namespace app\student\validate;
 
 use think\Validate;
 
@@ -18,16 +18,22 @@ use think\Validate;
  * @package app\cms\validate
  * @author 蔡伟明 <314013107@qq.com>
  */
-class TopicDetail extends Validate
+class AddStudent extends Validate
 {
     // 定义验证规则
     protected $rule = [
-        "content|选项内容"      => "require|max:100|min:2",
+        "name|新生姓名"      => "require|max:20",
+        "parentName|家长姓名"      => "require|max:20",
+//        "code|新生学号"      => "require|max:10|unique:StudentModel,code",
     ];
 
     protected $message  =   [
-        'content.require' => '选项内容不能为空',
-        'content.max' => '选项内容不能超过100个字符',
-        'content.min' => '选项内容不能少于2个字符',
+//        'code.require'  => '新生学号不能为空',
+//        'code.max'      => '新生学号不能超过10个字符',
+//        'code.unique'   => '新生学号不能重复',
+        'name.require'  => '新生姓名不能为空',
+        'name.max'      => '新生姓名不能超过20个字符',
+        'parentName.require'  => '家长姓名不能为空',
+        'parentName.max'      => '家长姓名不能超过20个字符',
     ];
 }

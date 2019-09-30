@@ -1,0 +1,290 @@
+{extend name="common/form"/}
+{block name="link"}
+<link href="__STATIC__/css/plugins/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+<link href="__STATIC__/plugins/mui/css/mui.picker.css" rel="stylesheet">
+<link href="__STATIC__/plugins/mui/css/mui.picker.min.css" rel="stylesheet">
+<link href="__STATIC__/plugins/mui/css/mui.poppicker.css" rel="stylesheet">
+{/block}
+{block name="style"}
+<style>
+    * {
+        touch-action: pan-y;
+    }
+    .main-advisory-content
+    {   width: 95%;
+        overflow: hidden;/*超出部分隐藏*/
+        white-space: nowrap;/*不换行*/
+        text-overflow:ellipsis;/*超出部分文字以...显示*/
+    }
+    .radio_inline{
+        display: inline-block;
+        width: 65%;
+    }
+    .radio_inline label{
+
+        width: 20%;
+        padding-left: 40px;
+        padding-right: 40px;
+    }
+    .radio_inline input[type=radio]{
+        width: 15%;
+        right: auto;
+    }
+
+
+    /*//换个样式*/
+    .change .mui-radio input[type='radio']:checked:before{
+        content:'\e442';
+        color:red;
+    }
+</style>
+{/block}
+{block name="body"}
+<div class="mui-off-canvas-wrap mui-draggable">
+    <!-- 主页面容器 -->
+    <div class="mui-inner-wrap">
+        <!-- 主页面标题 -->
+        <header class="mui-bar mui-bar-nav">
+            <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" id="go-back"></a>
+            <h1 class="mui-title" id="title">添加新生</h1>
+        </header>
+        <!-- 主页面内容容器 -->
+        <div id="refreshContainer" class="mui-content mui-scroll-wrapper">
+            <div class="mui-scroll">
+                <!-- 主界面具体展示内容 -->
+                <form class="mui-input-group" data-parsley-validate="">
+                    <div class="mui-input-row">
+                        <label>新生姓名 <span style="color:red">*</span></label>
+                        <input type="text" name="name" class="mui-input-clear" maxlength="20" placeholder="请输入新生姓名" autocomplete="off">
+                    </div>
+                    <!--<div class="mui-input-row">-->
+                        <!--<label>新生学号 <span style="color:red">*</span></label>-->
+                        <!--<input type="text" name="code" class="mui-input-clear" maxlength="10" placeholder="请输入新生学号" autocomplete="off">-->
+                    <!--</div>-->
+                    <div class="mui-input-row">
+                        <label>性别</label>
+                        <span class="radio_inline mui-radio">
+                            <input name="gender" type="radio" id="radio_allow" checked value="1">
+                            <label for="radio_allow">男</label>
+                            <input name="gender" type="radio" id="radio_refuse" value="2">
+                            <label for="radio_refuse">女</label>
+                        </span>
+                    </div>
+                    <!--<div class="mui-input-row">-->
+                    <!--<label>所属班级 <span style="color:red">*</span></label>-->
+                    <!--<input type="hidden" name="class_id" id="class_id">-->
+                    <!--<input type="text" id='choiceClass' class="mui-input-clear" placeholder="请选择咨询分类">-->
+                    <!--</div>-->
+                    <div class="mui-input-row">
+                        <label>证件类型<span style="color:red">*</span></label>
+                        <input type="hidden" name="idcard_type" id="idcard_type">
+                        <input type="text" name="" id='choiceIdCard' class="mui-input-clear" placeholder="请选择身份证类型">
+                    </div>
+                    <div class="mui-input-row">
+                        <label>身份证号<span style="color:red">*</span></label>
+                        <input type="text" name="idcard" id="idcard" class="mui-input-clear" placeholder="请输入身份证号" autocomplete="off">
+                    </div>
+                    <div class="mui-input-row">
+                        <label>家长姓名<span style="color:red">*</span></label>
+                        <input type="text" name="parentName"  class="mui-input-clear" maxlength="20" placeholder="请输入家长姓名" autocomplete="off">
+                    </div>
+                    <div class="mui-input-row">
+                        <label>家长电话<span style="color:red">*</span></label>
+                        <input type="text" name="phone"  class="mui-input-clear" placeholder="请输入家长电话" autocomplete="off">
+                    </div>
+                    <!--<div class="mui-input-row">-->
+                        <!--<label>入学时间</label>-->
+                        <!--<input type="text" id='showTimeSPicker' name="" data-options='{"type":"date"}' class="mui-input-clear" placeholder="选择开始日期 ...">-->
+                    <!--</div>-->
+                    <div id='userResult' class="ui-alert"></div>
+                    <div class="mui-button-row">
+                        <input type="hidden" value="{$classes}" id="classes" name="class_id">
+                        <button type="reset" class="mui-btn mui-btn-danger" >重置</button>
+                        <button type="submit" class="mui-btn mui-btn-primary" >确认</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="mui-off-canvas-backdrop"></div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.picker.js"></script>
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.picker.min.js"></script>
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.poppicker.js"></script>
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/common.js"></script>
+<script>
+    jQuery(document).ready(function () {
+        mui.init();
+        mui('.mui-scroll-wrapper').scroll();
+        // mui('#go-back').on('tap','a',function(){
+        //     // console.log('window.history.back()', window.history.back())
+        //     window.history.back()
+        // });
+    });
+    Parsley.on('form:submit', function(e) {
+        var formData = $('form').serializeObject();
+        var error = '';
+        if (formData.name === '') {
+            error = '请输入【新生姓名】具体内容 ';
+        }
+        if (formData.idcard_type === '') {
+            error = '请选择【证件类型】 ';
+        }
+        if (formData.idcard === '') {
+            error = '请输入【身份证号】具体内容';
+        }
+        if (formData.phone === '') {
+            error = '请输入【家长电话】具体内容';
+        }
+        if (formData.parentName === '') {
+            error = '请输入【家长姓名】具体内容';
+        }
+        if (formData.name.length > 20) {
+            error = '【新生姓名】内容长度过长[20字符]';
+        }
+        if (formData.parentName.length > 20) {
+            error = '【家长姓名】内容长度过长[20字符]';
+        }
+        // if (formData.code.length > 10) {
+        //     error = '【新生学号】内容长度过长[10字符]';
+        // }
+        if (error !== '') {
+            mui.alert(error, '哎呀，出错了', function() {
+            });
+            return false;
+        }
+        return muiAjaxPostData(formData, "{:url('index/add')}");
+    });
+</script>
+<script>
+    function isEmojiCharacter(substring){
+        if(substring){
+            var reg = new RegExp("[~#^$@%&!?%*]", 'g');
+            if (substring.match(reg)) {
+                return true;
+            }
+            for ( var i = 0; i < substring.length; i++) {
+                var hs = substring.charCodeAt(i);
+                if (0xd800 <= hs && hs <= 0xdbff) {
+                    if (substring.length > 1) {
+                        var ls = substring.charCodeAt(i + 1);
+                        var uc = ((hs - 0xd800) * 0x400) + (ls - 0xdc00) + 0x10000;
+                        if (0x1d000 <= uc && uc <= 0x1f77f) {
+                            return true;
+                        }
+                    }
+                } else if (substring.length > 1) {
+                    var ls = substring.charCodeAt(i + 1);
+                    if (ls == 0x20e3) {
+                        return true;
+                    }
+                } else {
+                    if (0x2100 <= hs && hs <= 0x27ff) {
+                        return true;
+                    } else if (0x2B05 <= hs && hs <= 0x2b07) {
+                        return true;
+                    } else if (0x2934 <= hs && hs <= 0x2935) {
+                        return true;
+                    } else if (0x3297 <= hs && hs <= 0x3299) {
+                        return true;
+                    } else if (hs == 0xa9 || hs == 0xae || hs == 0x303d || hs == 0x3030
+                        || hs == 0x2b55 || hs == 0x2b1c || hs == 0x2b1b
+                        || hs == 0x2b50) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+</script>
+<script>
+    var classes,cards;
+    (function($){
+        $(document).ready(function(){
+            classes = JSON.parse($("#classes").val());
+            cards = [
+                {"value":"0","text":"居民身份证"},
+                {"value":"1","text":"护照"},
+                {"value":"2","text":"港澳台居民身份证"},
+                {"value":"4","text":"旅行证件"},
+                {"value":"5","text":"其他"}
+            ];
+        });
+    })(jQuery);
+    (function($, doc, $$) {
+        $.init();
+        $.ready(function() {
+            //普通示例
+            var userPicker = new $.PopPicker();
+            var showSTime = doc.getElementById("showTimeSPicker");
+            userPicker.setData(cards);
+            var choiceClassButton = doc.getElementById('choiceIdCard');
+            var class_idButton = doc.getElementById('idcard_type');
+            choiceClassButton.addEventListener('tap', function(event) {
+                userPicker.show(function(items) {
+                    choiceClassButton.value = items[0].text;
+                    class_idButton.value = items[0].value;
+                    //返回 false 可以阻止选择框的关闭
+                    //return false;
+                });
+            }, false);
+            // showSTime.addEventListener('tap', function () {
+            //     var _self = this;
+            //     var options = {};
+            //     var year = new Date().getFullYear() ;
+            //     var month = new Date().getMonth();
+            //     var day = new Date().getDate();
+            //     options['type'] = 'date';
+            //     options['beginDate'] =  new Date(year, month, day+1);
+            //     var id = this.getAttribute('id');
+            //     _self.picker = new $.DtPicker(options);
+            //     _self.picker.show(function(rs) {
+            //         /*
+            //          * rs.value 拼合后的 value
+            //          * rs.text 拼合后的 text
+            //          * rs.y 年，可以通过 rs.y.vaue 和 rs.y.text 获取值和文本
+            //          * rs.m 月，用法同年
+            //          * rs.d 日，用法同年
+            //          * rs.h 时，用法同年
+            //          * rs.i 分（minutes 的第二个字母），用法同年
+            //          */
+            //         showSTime.value= rs.value;
+            //     });
+            // }, false);
+            //-----------------------------------------
+            //级联示例
+//            var cityPicker = new $.PopPicker({
+//                layer: 2
+//            });
+//            cityPicker.setData(cityData);
+//            var showCityPickerButton = doc.getElementById('showCityPicker');
+//            var cityResult = doc.getElementById('cityResult');
+//            showCityPickerButton.addEventListener('tap', function(event) {
+//                cityPicker.show(function(items) {
+//                    cityResult.innerText = "你选择的城市是:" + items[0].text + " " + items[1].text;
+//                    //返回 false 可以阻止选择框的关闭
+//                    //return false;
+//                });
+//            }, false);
+            //-----------------------------------------
+            //     //级联示例
+//            var cityPicker3 = new $.PopPicker({
+//                layer: 3
+//            });
+//            cityPicker3.setData(cityData3);
+//            var showCityPickerButton = doc.getElementById('showCityPicker3');
+//            var cityResult3 = doc.getElementById('cityResult3');
+//            showCityPickerButton.addEventListener('tap', function(event) {
+//                cityPicker3.show(function(items) {
+//                    cityResult3.innerText = "你选择的城市是:" + (items[0] || {}).text + " " + (items[1] || {}).text + " " + (items[2] || {}).text;
+//                    //返回 false 可以阻止选择框的关闭
+//                    //return false;
+//                });
+//            }, false);
+        });
+    })(mui, document, jQuery);
+</script>
+
+{/block}

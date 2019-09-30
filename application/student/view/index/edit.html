@@ -1,0 +1,149 @@
+{extend name="common/form"/}
+{block name="link"}
+<link href="__STATIC__/css/plugins/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+<link href="__STATIC__/plugins/mui/css/mui.picker.css" rel="stylesheet">
+<link href="__STATIC__/plugins/mui/css/mui.picker.min.css" rel="stylesheet">
+<link href="__STATIC__/plugins/mui/css/mui.poppicker.css" rel="stylesheet">
+{/block}
+{block name="style"}
+<style>
+* {
+    touch-action: pan-y;
+}
+.main-advisory-content
+{   width: 95%;
+    overflow: hidden;/*超出部分隐藏*/
+    white-space: nowrap;/*不换行*/
+    text-overflow:ellipsis;/*超出部分文字以...显示*/
+}
+.radio_inline{
+     display: inline-block;
+     width: 65%;
+     }
+ .radio_inline label{
+
+     width: 20%;
+     padding-left: 40px;
+     padding-right: 40px;
+     }
+ .radio_inline input[type=radio]{
+     width: 15%;
+ right: auto;
+     }
+
+
+ /*//换个样式*/
+ .change .mui-radio input[type='radio']:checked:before{
+       content:'\e442';
+       color:red;
+       }
+</style>
+{/block}
+{block name="body"}
+<div class="mui-off-canvas-wrap mui-draggable">
+    <!-- 主页面容器 -->
+    <div class="mui-inner-wrap">
+        <!-- 主页面标题 -->
+        <header class="mui-bar mui-bar-nav">
+            <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" id="go-back"></a>
+            <h1 class="mui-title" id="title">编辑新生</h1>
+        </header>
+        <!-- 主页面内容容器 -->
+        <div id="refreshContainer" class="mui-content mui-scroll-wrapper">
+            <div class="mui-scroll">
+                <!-- 主界面具体展示内容 -->
+                <form class="mui-input-group" data-parsley-validate="">
+                    <div class="mui-input-row">
+                        <label>新生姓名 <span style="color:red">*</span></label>
+                        <input type="text" name="name" class="mui-input-clear" maxlength="20" placeholder="请输入新生姓名" autocomplete="off" value="{$student.name}">
+                    </div>
+                    <!--<div class="mui-input-row">-->
+                    <!--<label>新生学号 <span style="color:red">*</span></label>-->
+                    <!--<input type="text" name="code" class="mui-input-clear" maxlength="10" placeholder="请输入新生学号" autocomplete="off">-->
+                    <!--</div>-->
+                    <div class="mui-input-row">
+                        <label>性别</label>
+                        <span class="radio_inline mui-radio">
+                            <input name="gender" type="radio" id="radio_allow" {if $student.gender == 1} checked {/if} value="1">
+                            <label for="radio_allow">男</label>
+                            <input name="gender" type="radio" id="radio_refuse" {if $student.gender == 2} checked {/if} value="2">
+                            <label for="radio_refuse">女</label>
+                        </span>
+                    </div>
+                    <!--<div class="mui-input-row">-->
+                    <!--<label>所属班级 <span style="color:red">*</span></label>-->
+                    <!--<input type="hidden" name="class_id" id="class_id">-->
+                    <!--<input type="text" id='choiceClass' class="mui-input-clear" placeholder="请选择咨询分类">-->
+                    <!--</div>-->
+                    <div class="mui-input-row">
+                        <label>身份证号<span style="color:red">*</span></label>
+                        <input type="text" name="idcard" id="idcard" class="mui-input-clear" placeholder="请输入身份证号" autocomplete="off" value="{$student.idcard ?? ''}">
+                    </div>
+                    <div class="mui-input-row">
+                        <label>家长姓名<span style="color:red">*</span></label>
+                        <input type="text" name="parentName"  class="mui-input-clear" maxlength="20" placeholder="请输入家长姓名" autocomplete="off" value="{$parent.name}">
+                    </div>
+                    <div class="mui-input-row">
+                        <label>家长电话<span style="color:red">*</span></label>
+                        <input type="text" name="phone"  class="mui-input-clear" placeholder="请输入家长电话" autocomplete="off" value="{$parent.phone}">
+                    </div>
+                    <div id='userResult' class="ui-alert"></div>
+                    <div class="mui-button-row">
+                        <input type="hidden" name="code" value="{$student.code}">
+                        <button type="reset" class="mui-btn mui-btn-danger" >重置</button>
+                        <button type="submit" class="mui-btn mui-btn-primary" >确认</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="mui-off-canvas-backdrop"></div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.picker.js"></script>
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.picker.min.js"></script>
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.poppicker.js"></script>
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/common.js"></script>
+<script>
+    jQuery(document).ready(function () {
+        mui.init();
+        mui('.mui-scroll-wrapper').scroll();
+        // mui('#go-back').on('tap','a',function(){
+        //     // console.log('window.history.back()', window.history.back())
+        //     window.history.back()
+        // });
+    });
+    Parsley.on('form:submit', function(e) {
+        var formData = $('form').serializeObject();
+        var error = '';
+        if (formData.name === '') {
+            error = '请输入【新生姓名】具体内容 ';
+        }
+        if (formData.idcard_type === '') {
+            error = '请选择【证件类型】 ';
+        }
+        if (formData.idcard === '') {
+            error = '请输入【身份证号】具体内容';
+        }
+        if (formData.phone === '') {
+            error = '请输入【家长电话】具体内容';
+        }
+        if (formData.parentName === '') {
+            error = '请输入【家长姓名】具体内容';
+        }
+        if (formData.name.length > 20) {
+            error = '【新生姓名】内容长度过长[20字符]';
+        }
+        if (formData.parentName.length > 20) {
+            error = '【家长姓名】内容长度过长[20字符]';
+        }
+        if (error !== '') {
+            mui.alert(error, '哎呀，出错了', function() {
+            });
+            return false;
+        }
+        return muiAjaxPostData(formData, "{:url('index/edit')}");
+    });
+</script>
+{/block}

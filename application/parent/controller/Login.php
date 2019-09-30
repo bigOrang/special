@@ -45,7 +45,7 @@ class Login extends Controller
         if ($request->isPost()) {
             $requestData = $request->param();
             session("parent_is_login",1);
-            session("parent_account_id", $requestData['account_id']);
+//            session("parent_account_id", $requestData['account_id']);
             session("parent_s_id", $requestData['topic']);
             return $this->responseToJson([],'success', 200);
         } else {

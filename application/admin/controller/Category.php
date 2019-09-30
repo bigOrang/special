@@ -6,6 +6,7 @@ use app\admin\model\CategoryModel;
 use app\admin\model\SpecialModel;
 use app\admin\model\TopicDetailModel;
 use app\admin\model\TopicModel;
+use app\parent\model\TopicUserModel;
 use think\Db;
 use think\Exception;
 use think\facade\Log;
@@ -135,7 +136,14 @@ class Category extends Base
         if ($request->has("ids") && !empty($request->param("ids"))) {
             $ids = $request->param("ids");
             try{
+                $cateGoryModel = new CategoryModel();
+                $topicModel = new TopicModel();
+                $c_ids = $cateGoryModel->where("id", $ids)->whereOr("parent_id", $ids)->column("id");
+                $t_ids = $topicModel->whereIn("c_id", $c_ids)->column("id");
                 CategoryModel::destroy($ids);
+                $cateGoryModel->whereIn("id", $c_ids)->delete();
+                $topicModel->whereIn("c_id", $c_ids)->delete();
+                TopicDetailModel::whereIn("t_id", $t_ids)->delete();
                 return $this->responseToJson([],'删除成功' , 200);
             }catch (Exception $e) {
                 return $this->responseToJson([],'删除失败'.$e->getMessage() , 201);

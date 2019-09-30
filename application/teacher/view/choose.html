@@ -1,0 +1,48 @@
+{extend name="common/form"/}
+{block name="link"}
+<link href="__STATIC__/css/plugins/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+<link href="__STATIC__/plugins/mui/css/mui.picker.css" rel="stylesheet">
+<link href="__STATIC__/plugins/mui/css/mui.poppicker.css" rel="stylesheet">
+{/block}
+{block name="style"}
+<style>
+    * {
+        touch-action: pan-y;
+    }
+</style>
+{/block}
+{block name="body"}
+<div class="mui-off-canvas-wrap mui-draggable">
+    <!-- 主页面容器 -->
+    <div class="mui-inner-wrap">
+        <!-- 主页面标题 -->
+        <header class="mui-bar mui-bar-nav">
+            <h1 class="mui-title" id="title">学生测评</h1>
+        </header>
+        <div class="mui-content mui-scroll-wrapper">
+            <div style="margin-top: 150px;"></div>
+            <div style="width: 90%;margin: 0 auto;">
+                <button type="button" id="assess" class="mui-btn mui-btn-primary mui-btn-block">学生测评</button>
+                <button type="button" id="e-chart" class="mui-btn mui-btn-royal mui-btn-block">测评统计</button>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.picker.js"></script>
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.poppicker.js"></script>
+<script>
+    var formData = {};
+    jQuery(document).ready(function () {
+        mui.init();
+        $("#assess").click(function () {
+            document.location.href = "{:url('login/chooseAssess')}";
+        });
+        $("#e-chart").click(function () {
+            document.location.href = "{:url('login/chooseEchart')}";
+        });
+    });
+
+</script>
+{/block}

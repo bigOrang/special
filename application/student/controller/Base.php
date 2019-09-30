@@ -1,10 +1,10 @@
 <?php
-namespace app\admin\controller;
+namespace app\student\controller;
 
-use app\admin\model\SpecialModel;
 use think\Controller;
 use think\Db;
 use think\facade\Log;
+use think\facade\Session;
 
 class Base extends Controller
 {
@@ -14,31 +14,25 @@ class Base extends Controller
         $school_id = input('get.school_id');
         $client_id = input('get.client_id');
         if (!empty($user_id) && !empty($school_id) && !empty($client_id)) {
-            session('auth_status', 1);
-            session('user_id', $user_id);
-            $res = $this->checkIsManager($user_id, $school_id, $client_id);
-            if (empty($res) || $res['error_code'] != 1000) {
-                exit($this->fetch('./403',[
-                    'msg' => '身份认证失败'
-                ]));
+            if (session('add_student_user_id') !== $user_id || session('add_student_school_id') !== $school_id) {
+                Session::delete("add_student_grade");
+                Session::delete("add_student_class");
+                Session::delete("add_student_s_id");
             }
-            if ($res['extra']['status'] == 1) {
-                session('auth_status', $res['extra']['status']);
-                session('school_id', $school_id);
-            } else {
-               exit($this->fetch('./403',[
-                   'msg' => '没有权限'
-               ]));
-            }
+            session('add_student_user_id', $user_id);
+            session('add_student_school_id', $school_id);
+            session('add_student_client_id', $client_id);
+            session('add_student_auth_status',1);
+
         } else {
-            if (empty(session('auth_status'))) {
+            if (empty(session('add_student_auth_status'))) {
                 exit($this->fetch('./403',[
                     'msg' => '身份过期，请重新登陆!'
                 ]));
             }
         }
         if (empty($school_id)) {
-            $school_id = session('school_id');
+            $school_id = session('add_student_school_id');
         }
         $db = Db::table('t_sys_mod_biz_db')->where('school_id', $school_id)->find();
         if ($db) {
@@ -54,7 +48,7 @@ class Base extends Controller
                 'charset'         => 'utf8',
                 'prefix'          => '',
             ];
-            session('db-config_'.$school_id, $config);
+            session('add_student_db-config_'.$school_id, $config);
         } else {
             exit($this->fetch('./404',[
                 'msg' => '初始化数据失败!'
@@ -83,48 +77,15 @@ class Base extends Controller
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * 判断是否为管理员
-     * @param $user_id
-     * @param $school_id
-     * @param $client_id
-     * @return array|mixed
-     */
-    public function checkIsManager($user_id, $school_id, $client_id)
-    {
-        $url = "http://47.100.19.248:8000/oauth/service/config/admin?user_id=" . $user_id . "&service_id=" . $client_id;
-//        $url = "https://mcpapi.iyuyun.net:18443/oauth/service/config/admin?user_id=" . $user_id . "&service_id=" . $client_id;
-        $header = [
-            "Content-Type:application/json;charset=UTF-8",
-            "school_id:" . $school_id,
-            'mdc_value:12345-54321-12345-54321-12345',
-        ];
-        return $this->curlRequest($url, 'get', $header,'',  []);
-    }
-
-
-    /**
-     * 消息提示模板
-     * @param string $msg
-     * @return mixed
-     */
-    protected function alertInfo($msg = '')
-    {
-        return $this->fetch('./common/alert-info', [
-            'msg' => $msg,
-        ]);
-    }
-
-
-    public function getTeacher()
+    public function getUserInfo()
     {
         //获取token
         $tokenService = config('api.getToken');
-        $teacherService = config('api.getTeacher');
+        $userInfoService = config('api.getUserInfo');
         $basicHeader[] = "Authorization: Basic ".base64_encode("{$tokenService['basic']['username']}:{$tokenService['basic']['password']}"); //添加头，在name和pass处填写对应账号密码
-        $tokenHeader = ['school_id:' . session("school_id")];
+        $tokenHeader = ['school_id:' . session("add_student_school_id")];
         $tokenHeader = array_merge($tokenHeader, $basicHeader);
-        $tokenService['body']['username'] = session("user_id");
+        $tokenService['body']['username'] = session("add_student_user_id");
         $token = $this->curlRequest($tokenService['url'], $tokenService['method'], $tokenHeader, $tokenService['body'], []);
         if (!isset($token['access_token'])) {
             exit($this->fetch('./500',[
@@ -132,18 +93,19 @@ class Base extends Controller
             ]));
         } else {
             $bearerHeader[] = "Authorization: Bearer ".$token['access_token'];
-            $teacherHeader = [
-                'school_id:' . session("school_id"),
-                'master_key:' . $teacherService['header']['master_key'],
-                'mdc_value:' . $teacherService['header']['mdc_value'],
+            $userInfoHeader = [
+                'Content-Type:' . $userInfoService['header']['Content-Type'],
+                'school_id:' . session("add_student_school_id"),
+                'mdc_value:' . $userInfoService['header']['mdc_value'],
+                'client_id:' . $userInfoService['header']['client_id'],
             ];
-            $teacherHeader = array_merge($teacherHeader, $bearerHeader);
-            $res = $this->curlRequest($teacherService['url'], $teacherService['method'], $teacherHeader, $teacherService['body'], []);
-            if ($res['error_code'] == 1000) {
-                return $res['extra'];
+            $userInfoHeader = array_merge($userInfoHeader, $bearerHeader);
+            $res = $this->curlRequest($userInfoService['url'], $userInfoService['method'], $userInfoHeader, $userInfoService['body'], []);
+            if (isset($res['gender'])) {
+                return $res;
             } else {
                 exit($this->fetch('./500',[
-                    'msg' => '获取教师记录失败'
+                    'msg' => '获取用户详情失败'
                 ]));
             }
         }
@@ -243,28 +205,16 @@ class Base extends Controller
         echo ob_get_clean();
     }
 
-
     /**
-     * 递归解析节点进行排序
-     * @param array $data
-     * @param int $pid
+     * 消息提示模板
+     * @param string $msg
+     * @return mixed
      */
-    protected function parseNode($data = [], $pid = 0)
+    protected function alertInfo($msg = '')
     {
-        $sort   = 1;
-        $result = [];
-        foreach ($data as $item) {
-            $result[] = [
-                'id'   => (int)$item['id'],
-                't_parent_id'  => (int)$pid,
-                'sort' => $sort,
-            ];
-            if (isset($item['children'])) {
-                $result = array_merge($result, $this->parseNode($item['children'], $item['id']));
-            }
-            $sort ++;
-        }
-        return $result;
+        return $this->fetch('./common/alert-info', [
+            'msg' => $msg,
+        ]);
     }
 
 
@@ -291,9 +241,10 @@ class Base extends Controller
             }
             $q = rtrim($q, ", ")." WHERE ".$referenceColumn." IN (".  rtrim($whereIn, ', ').")";
             // Update
-            return Db::connect(session('db-config_' . session("school_id")))->execute(DB::raw($q));
+            return Db::connect(session('add_student_db-config_' . session("add_student_school_id")))->execute(DB::raw($q));
         } else {
             return false;
         }
     }
+
 }

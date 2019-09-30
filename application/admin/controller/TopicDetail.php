@@ -16,7 +16,7 @@ class TopicDetail extends Base
         if ($request->isPost() && $request->has("id")) {
             $topicDetailModel = new TopicDetailModel();
             $t_id = $request->param("id");
-            $data = $topicDetailModel->where("t_id", $t_id)->order("sort","asc")->field("content as text, id, id as href")->select()->toArray();
+            $data = $topicDetailModel->where("t_id", $t_id)->order("sort","asc")->field("content as text, id, id as href, score")->select()->toArray();
             return $this->responseToJson(json_encode($data, 320), 'success');
         }
         return $this->responseToJson([], '错误的访问方式','301');
@@ -47,6 +47,7 @@ class TopicDetail extends Base
             try {
                 $topicDetailModel->where("id", $requestData['id'])->update([
                     'content'     => $requestData['content'],
+                    'score'     => isset($requestData['score']) ? $requestData['score'] : 1,
                 ]);
                 return $this->responseToJson([],'编辑成功');
             } catch (\Exception $e) {
@@ -61,8 +62,7 @@ class TopicDetail extends Base
         if ($request->has("ids") && !empty($request->param("ids"))) {
             $ids = $request->param("ids");
             try{
-                TopicModel::destroy($ids);
-                (new \app\admin\model\TopicDetailModel)->whereIn("t_id", $ids)->delete();
+                (new \app\admin\model\TopicDetailModel)->where("id", $ids)->delete();
                 return $this->responseToJson([],'删除成功' , 200);
             }catch (Exception $e) {
                 return $this->responseToJson([],'删除失败'.$e->getMessage() , 201);

@@ -13,7 +13,7 @@ return [
             'password'=>'123456'
         ],
         'method' => 'post',
-        'url' => 'https://mcpapi.iyuyun.net:18443/oauth/token',
+        'url' => 'http://47.100.19.248:8000/oauth/token',
         'header' => [
             'school_id' => '1007',
         ],
@@ -26,7 +26,7 @@ return [
     ],
     'getTeacher' => [//获取教师名单
         'method' => 'get',
-        'url' => 'https://mcpapi.iyuyun.net:18443/oauth/service/staff/list',
+        'url' => 'http://47.100.19.248:8000/oauth/service/staff/list',
         'header' => [
             'Content-Type' => 'application/x-www-form-urlencoded',
             'school_id' => '1007',
