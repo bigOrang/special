@@ -55,7 +55,8 @@
                         <input type="hidden" value="{$topicData}" id="topicData">
                         <button type="submit" class="mui-btn mui-btn-success mui-btn-block" style="line-height: 0px;">搜索</button>
                     </div>
-                    <div class="" style="text-align: center;margin-top: 10px;position: inherit;top: 15px;display: block;"><a style="color: #666666;text-decoration: underline;">七年级8班某某测评统计结束</a></div>
+                    <div class="title" style="text-align: center;margin-top: 10px;position: inherit;top: 8px;display: block;">
+                        <a style="color: #666666;text-decoration: underline;" href="{:url('index/index')}"></a></div>
                     <div id="container" style="height: 100%;min-height: 400px;"></div>
                 </form>
             </div>
@@ -70,14 +71,23 @@
 <script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.poppicker.js"></script>
 <script>
     var formData = {};
+    var htmlD = htmlS = '';
     jQuery(document).ready(function () {
         mui.init();
+
+        mui('.title').on('tap','a',function(){
+            document.location.href = this.href;
+            return false;
+        });
+        mui('#add-advisory').on('tap','a',function(){
+            document.location.href = '{:url("login/index")}';
+            return false;
+        });
     });
 
     Parsley.on('form:submit', function(e) {
         formData = $('form').serializeObject();
         var error = '';
-        console.log('formdata', formData)
         if (formData.grade === '' || formData.class === '' ) {
             error = '请选择【年级/班级】选项';
         }
@@ -88,6 +98,7 @@
             mui.alert(error, '哎呀，出错了');
             return false;
         }
+        $(".title").find("a").html(htmlS + htmlD + '统计结果');
         return ajaxPost(formData);
     });
     function ajaxPost(formData) {
@@ -137,6 +148,7 @@
             topicPickerButton.addEventListener('tap', function(event) {
                 topicPicker.show(function(items) {
                     topicPickerButton.value = items[0].text;
+                    htmlD +=  items[0].text;
                     topic.value = items[0].value;
                     //返回 false 可以阻止选择框的关闭
                     //return false;
@@ -155,6 +167,7 @@
                gradePicker.show(function(items) {
                    console.log('item', items);
                    gradePickerButton.value = items[0].text + items[1].text;
+                   htmlS +=  items[0].text + items[1].text;
                    grade.value = items[0].value
                    class_.value = items[1].value
                    //返回 false 可以阻止选择框的关闭

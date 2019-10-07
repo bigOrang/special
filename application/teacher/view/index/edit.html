@@ -62,6 +62,28 @@
     }
 
     .mui-radio input[type=radio]:checked:before {content: '\e442';}
+
+    #topic-menu-list .mui-scroll {
+        margin-left: 1%;
+        padding-bottom: 5%;
+    }
+    #topic-menu-list .mui-scroll:before {
+        content: "";
+        display: block;
+    }
+    #topic-menu-list .mui-scroll:after {
+        content: "";
+        display: block;
+    }
+    #topic-menu-list .mui-scroll button {
+        border-radius: 50%;
+        margin: 2px 0px;
+        width:40px;
+        height:40px;
+    }
+    label {
+        margin-top:5px;
+    }
 </style>
 {/block}
 {block name="body"}
@@ -69,41 +91,38 @@
 <header class="mui-bar mui-bar-nav">
     <a class="mui-icon mui-action-menu mui-icon-back mui-pull-left" id="go-back"></a>
     <h1 class="mui-title">『编辑』{$title}</h1>
+    <a class="mui-icon mui-action-menu mui-icon-bars mui-pull-right" id="topic-menu"></a>
 </header>
 <!--mui内容-->
 <div class="mui-content mui-scroll-wrapper">
     <div class="mui-scroll">
         <form data-parsley-validate="">
-            {foreach $question as $key=>$val}
-            <div class="mui-card">
-                <div class="mui-card-header" style="word-wrap:break-word;display: block;"> <span style="color: red">*</span>第{$key + 1}题 ：{$val.title}</div>
-                <div class="mui-card-content">
-                    {foreach $val.child as $list=>$info}
-                        <div class="mui-input-row mui-radio mui-left">
-                            <label>{$info.content}</label>
-                            {in name="$info.id" value="$topicUsers"}
-                            <input name="radio[{$info.t_id}]" type="radio" style="margin: 0px;" checked required value="{$info.id}">
-                            {else}
-                            <input name="radio[{$info.t_id}]" type="radio" style="margin: 0px;" required value="{$info.id}">
-                            {/in}
-                        </div>
-                    {/foreach}
-                </div>
+            <div class="mui-card" id="topic-detail">
             </div>
-            {/foreach}
             <div class="mui-card">
                 <div class="mui-button-row" style="padding-bottom: 5px;">
-                    <input type="hidden" name="q_id" value="{$q_id}">
-                    <button type="reset" class="mui-btn mui-btn-danger">重置</button>
-                    {if $is_end}
-                    <input type="hidden" name="is_end" value="1">
-                    <button type="submit" class="mui-btn mui-btn-primary">提交</button>
-                    {else/}
                     <button type="submit" class="mui-btn mui-btn-primary">下一题</button>
-                    {/if}
                 </div>
             </div>
         </form>
+    </div>
+</div>
+<div id="topic-menu-list" class="mui-scroll-wrapper mui-popover" style="display: none;top: 25%;height: 75%;width: 100%;">
+    <div class="mui-scroll" style="position: inherit;top: 20px;">
+        <div>
+            {foreach $topics as $key=>$value}
+            <label for="">第{$key+1}章：{$value.title}</label>
+            <div>
+                {foreach $value['child'] as $list=>$info}
+                {if in_array($info, $value['select'])}
+                    <button type="button" data-action="{$info}" data-is-reply="1" class="mui-btn mui-btn-primary mui-btn-self-radio btn-jump">{$list+1}</button>
+                {else}
+                    <button type="button" data-action="{$info}" data-is-reply="0" class="mui-btn mui-btn-self-radio btn-jump">{$list+1}</button>
+                {/if}
+                {/foreach}
+            </div>
+            {/foreach}
+        </div>
     </div>
 </div>
 {/block}
@@ -115,15 +134,51 @@
 <script type="text/javascript" src="__STATIC__/js/plugins/validate/messages_zh.min.js"></script>
 <script type="text/javascript" src="__STATIC__/plugins/mui/js/common.js"></script>
 <script>
-    var c_id = "{$c_id}";
+    var action_id = '{$action}';
+    var end_action_id = '{$end_action}';
     jQuery(document).ready(function () {
         mui.init();
-        mui('.mui-scroll-wrapper').scroll();
+        mui('.mui-scroll-wrapper').scroll({
+            deceleration: 0.0005 //flick 减速系数，系数越大，滚动速度越慢，滚动距离越小，默认值0.0006
+        });
+        getTopicDetail();
+        $("#topic-menu-list .mui-scroll").find("button").each(function () {
+            var actionId = $(this).attr("data-action")
+            if (actionId == action_id) {
+                $(this).addClass("mui-btn-success")
+            }
+        })
     });
+
+    (function($, $$) {
+        var menuClick = document.getElementById("topic-menu");
+        var mask = mui.createMask(function () {
+
+        });
+        menuClick.addEventListener('tap',function(){
+            mui('#topic-menu-list').popover('toggle');
+        });
+    })(mui, jQuery);
+
+
+    (function($, $$) {
+        $$(".btn-jump").click(function () {
+            action_id = $$(this).attr("data-action");
+            $$(this).addClass("mui-btn-success")
+            $$(".btn-jump").not($$(this)).removeClass("mui-btn-success");
+            var buttonEle = $$('#topic-menu-list').find('.mui-scroll');
+            var is_reply = buttonEle.find('button[data-is-reply="1"]').length;
+            var is_all   = buttonEle.find("button").length;
+            if (is_all - is_reply == 1) {
+                $$("button[type='submit']").html('提交完成测试')
+            }
+            getTopicDetail();
+        })
+    })(mui, jQuery);
+
     var click = document.getElementById("go-back");
     click.addEventListener('tap',function(){
-        var jump = '{:url("index/index",array("c_id"=>"C_id"))}';
-        window.location.href = jump.replace("C_id", c_id);
+        window.location.href = '{:url("index/index")}';
     });
     Parsley.on('form:submit', function(e) {
         var formData = $('form').serializeObject();
@@ -136,30 +191,74 @@
         return ajaxPost(formData);
     });
 
+    function getTopicDetail()
+    {
+        var formData = {};
+        formData['action_id'] = action_id;
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            data: formData,
+            url: "{:url('index/getTopicDetail')}",
+            complete: function () {
+                // layer.close(index);
+            },
+            success: function (res) {
+                if (res.code === 200) {
+                    var headerEle = "<div class=\"mui-card-header\" style=\"word-wrap:break-word;display: block;\"></div>";
+                    var ele = '';
+                    $.each(res.data.detail, function (key, value) {
+                        headerEle = $(headerEle).html(value.question_name);
+                        if (res.data.select !== null && res.data.select === value.id) {
+                            ele += "<div class=\"mui-input-row mui-radio mui-left\"><label>"+ value.content +"</label><input name='radio["+value.t_id+"]' type='radio' style='margin: 0px;' checked required value='"+value.id+"'></div>";
+                        } else {
+                            ele += "<div class=\"mui-input-row mui-radio mui-left\"><label>"+ value.content +"</label><input name='radio["+value.t_id+"]' type='radio' style='margin: 0px;' required value='"+value.id+"'></div>";
+                        }
+                    });
+                    $("#topic-detail").empty().append(headerEle).append(ele);
+                } else {
+                    mui.alert(res.msg,'错误');
+                }
+            },
+            error: function (xhr) {
+                mui.alert('操作失败，请联系管理员','错误');
+            }
+        });
+        return false;
+    }
+
     function ajaxPost(formData) {
         // var index = layer.load(2);
         $.ajax({
             type: 'post',
             dataType: 'json',
             data: formData,
-            url: "{:url('index/detailEdit')}",
+            url: "{:url('index/edit')}",
             complete: function () {
                 // layer.close(index);
             },
             success: function (res) {
                 if (res.code === 200) {
-                    console.log('res.data', res.data)
-                    mui.alert(res.msg,'编辑成功', function () {
-                        var url;
-                        if (res.data.url) {
-                            url = '{:url("index/index",array("c_id"=>"C_id"))}';
-                            window.location.href = url.replace("C_id", res.data.c_id);
-                            // return false;
-                        } else {
-                            url = '{:url("index/detail",array("q_id"=>"Q_id"))}';
-                            window.location.href = url.replace("Q_id", res.data.q_id);
-                        }
-                    });
+                    var buttonEle = $('#topic-menu-list').find('.mui-scroll');
+                    buttonEle.find('button[data-action="'+ action_id +'"]').attr("data-is-reply", "1")
+                    var is_reply = buttonEle.find('button[data-is-reply="1"]').length;
+                    var is_all   = buttonEle.find("button").length;
+                    if (is_all - is_reply == 1) {
+                        $("button[type='submit']").html('提交完成测试')
+                    }
+                    if (is_reply < is_all) {
+                        buttonEle.find('button[data-action="'+ action_id +'"]').addClass("mui-btn-primary");
+                        console.log('action_id-old', action_id)
+                        action_id = buttonEle.find('button[data-is-reply="0"]').eq(0).attr("data-action");
+                        var $curDd = buttonEle.find('button[data-action="'+ action_id +'"]');
+                        $curDd.addClass("mui-btn-success")
+                        $(".btn-jump").not('button[data-action="'+ action_id +'"]').removeClass("mui-btn-success");
+                        console.log('action_id-new', action_id)
+                        getTopicDetail();
+                    } else {
+                        //jump()
+                        window.location.href = "{:url('index/choose')}";
+                    }
                 } else {
                     mui.alert('获取数据错误','错误');
                 }

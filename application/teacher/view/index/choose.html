@@ -1,0 +1,47 @@
+{extend name="common/form"/}
+{block name="link"}
+<link href="__STATIC__/css/plugins/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+{/block}
+{block name="style"}
+<style>
+    * {
+        touch-action: pan-y;
+    }
+</style>
+{/block}
+{block name="body"}
+<div class="mui-off-canvas-wrap mui-draggable">
+    <!-- 主页面容器 -->
+    <div class="mui-inner-wrap">
+        <!-- 主页面标题 -->
+        <header class="mui-bar mui-bar-nav">
+            <h1 class="mui-title" id="title">学生测评</h1>
+        </header>
+        <div class="mui-content mui-scroll-wrapper">
+            <div style="margin-top: 150px;"></div>
+            <div style="width: 90%;margin: 0 auto;">
+                <button type="button" id="assess" class="mui-btn mui-btn-primary mui-btn-block">返回测评</button>
+                <button type="button" id="e-chart" class="mui-btn mui-btn-royal mui-btn-block">查看详情</button>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script>
+    var formData = {};
+    var userCode = '{$Request.session.teacher_topicUser}';
+    jQuery(document).ready(function () {
+        mui.init();
+        $("#assess").click(function () {
+            document.location.href = "{:url('index/index')}";
+        });
+        $("#e-chart").click(function () {
+            var url = "{:url('index/detail' ,array('id'=>'P_id'))}";
+            url = url.replace("P_id", userCode);
+            document.location.href = url;
+        });
+    });
+
+</script>
+{/block}

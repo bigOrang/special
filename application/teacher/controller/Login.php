@@ -6,6 +6,7 @@ use app\teacher\model\SpecialModel;
 use app\teacher\model\ClassModel;
 use app\teacher\model\StudentModel;
 use think\Controller;
+use think\Db;
 use think\facade\Log;
 use think\facade\Session;
 use think\Request;
@@ -14,6 +15,52 @@ class Login extends Controller
 {
     public function index()
     {
+        $user_id = input('get.user_id');
+        $school_id = input('get.school_id');
+        $client_id = input('get.client_id');
+        if (!empty($user_id) && !empty($school_id) && !empty($client_id)) {
+            if (session('teacher_user_id') !== $user_id || session('teacher_school_id') !== $school_id) {
+                Session::delete("teacher_is_login");
+                Session::delete("teacher_grade");
+                Session::delete("teacher_class");
+                Session::delete("teacher_s_id");
+            }
+            session('teacher_user_id', $user_id);
+            session('teacher_school_id', $school_id);
+            session('teacher_client_id', $client_id);
+            session('teacher_auth_status',1);
+        } else {
+            if (empty(session("teacher_user_id"))) {
+                exit($this->fetch('./403',[
+                    'msg' => '未获取到用户相关信息'
+                ]));
+            }
+        }
+        if (empty($school_id)) {
+            $school_id = session('teacher_school_id');
+        }
+        $db = Db::table('t_sys_mod_biz_db')->where('school_id', $school_id)->find();
+        if ($db) {
+            $config = [
+                'type'            => 'mysql',
+                'hostname'        => $db['db_server'],
+                'database'        => $db['db_name'],
+                'username'        => $db['db_user'],
+                'password'        => $db['db_pass'],
+                'hostport'        => $db['db_port'],
+                'dsn'             => '',
+                'params'          => [],
+                'charset'         => 'utf8',
+                'prefix'          => '',
+            ];
+            session('teacher_db-config_'.$school_id, $config);
+        } else {
+            exit($this->fetch('./404',[
+                'msg' => '初始化数据失败!'
+            ]));
+        }
+//        if (!Session::has("teacher_is_login"))
+//            $this->redirect("./teacher/login/index");
         return $this->fetch('./choose');
     }
 
@@ -89,9 +136,12 @@ class Login extends Controller
             $grade = $request->param('grade', 0);
             $class = $request->param('class', 0);
             $topic = $request->param('topic', 0);
+
+            session("teacher_grade", $grade);
+            session("teacher_class", $class);
+            session("teacher_s_id", $topic);
             if (empty($grade) || empty($class) || empty($topic)) {
                 $errorMsg = "getCharts:errorMsg". 'grade:'.$grade.'，class:'.$class.'，topic:'.$topic;
-                Log::error($errorMsg);
                 return $this->responseToJson([],'请求参数错误，请联系管理员', 201);
             } else {
                 $students = StudentModel::alias("a")
@@ -120,7 +170,6 @@ class Login extends Controller
                     }else {
                         ++$fail;
                     }
-
                 }
                 $eCharts = [
                     ['name'=>'优秀', 'value'=>$good],
