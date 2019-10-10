@@ -90,7 +90,7 @@
 <!--mui标题-->
 <header class="mui-bar mui-bar-nav">
     <a class="mui-icon mui-action-menu mui-icon-back mui-pull-left" id="go-back"></a>
-    <h1 class="mui-title">『编辑』{$title}</h1>
+    <h1 class="mui-title">『详情』{$title}</h1>
     <a class="mui-icon mui-action-menu mui-icon-bars mui-pull-right" id="topic-menu"></a>
 </header>
 <!--mui内容-->
@@ -110,14 +110,15 @@
 <div id="topic-menu-list" class="mui-scroll-wrapper mui-popover" style="display: none;top: 25%;height: 75%;width: 100%;">
     <div class="mui-scroll" style="position: inherit;top: 20px;">
         <div>
+            {assign name="v_id" value="0" /}
             {foreach $topics as $key=>$value}
             <label for="">第{$key+1}章：{$value.title}</label>
             <div>
                 {foreach $value['child'] as $list=>$info}
                 {if in_array($info, $value['select'])}
-                <button type="button" data-action="{$info}" data-is-reply="1" class="mui-btn mui-btn-primary mui-btn-self-radio btn-jump">{$list+1}</button>
+                <button type="button" data-action="{$info}" data-vid="{$v_id++}" data-is-reply="1" class="mui-btn mui-btn-primary mui-btn-self-radio btn-jump">{$list+1}</button>
                 {else}
-                <button type="button" data-action="{$info}" data-is-reply="0" class="mui-btn mui-btn-self-radio btn-jump">{$list+1}</button>
+                <button type="button" data-action="{$info}" data-vid="{$v_id++}" data-is-reply="0" class="mui-btn mui-btn-self-radio btn-jump">{$list+1}</button>
                 {/if}
                 {/foreach}
             </div>
@@ -166,7 +167,6 @@
             action_id = $$(this).attr("data-action");
             $$(this).addClass("mui-btn-success")
             $$(".btn-jump").not($$(this)).removeClass("mui-btn-success");
-            var buttonEle = $$('#topic-menu-list').find('.mui-scroll');
             getTopicDetail();
             if (action_id === end_action) {
                 $$("button[type='submit']").html('返回测评')
@@ -187,7 +187,8 @@
             window.location.href = '{:url("index/index")}';
         } else {
             $("button[type='submit']").html('下一题')
-            var nextEle = buttonEle.find('button[data-action="' + action_id + '"]').next();
+            var nextVid = parseInt(buttonEle.find('button[data-action="' + action_id + '"]').attr("data-vid")) + 1;
+            var nextEle = buttonEle.find('button[data-vid="' + nextVid + '"]');
             action_id = nextEle.attr("data-action");
             var is_end = buttonEle.find('button[data-action="' + action_id + '"]').attr("data-action");
             if (is_end === end_action) {

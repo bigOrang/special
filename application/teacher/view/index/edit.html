@@ -90,7 +90,7 @@
 <!--mui标题-->
 <header class="mui-bar mui-bar-nav">
     <a class="mui-icon mui-action-menu mui-icon-back mui-pull-left" id="go-back"></a>
-    <h1 class="mui-title">『编辑』{$title}</h1>
+    <h1 class="mui-title">『评测』{$title}</h1>
     <a class="mui-icon mui-action-menu mui-icon-bars mui-pull-right" id="topic-menu"></a>
 </header>
 <!--mui内容-->
@@ -101,7 +101,7 @@
             </div>
             <div class="mui-card">
                 <div class="mui-button-row" style="padding-bottom: 5px;">
-                    <button type="submit" class="mui-btn mui-btn-primary">下一题</button>
+                    <button type="submit" id="send-sub" class="mui-btn mui-btn-primary">下一题</button>
                 </div>
             </div>
         </form>
@@ -136,11 +136,13 @@
 <script>
     var action_id = '{$action}';
     var end_action_id = '{$end_action}';
+    // var mask;
     jQuery(document).ready(function () {
         mui.init();
         mui('.mui-scroll-wrapper').scroll({
             deceleration: 0.0005 //flick 减速系数，系数越大，滚动速度越慢，滚动距离越小，默认值0.0006
         });
+        // mask = mui.createMask();//callback为用户点击蒙版时自动执行的回调；
         getTopicDetail();
         $("#topic-menu-list .mui-scroll").find("button").each(function () {
             var actionId = $(this).attr("data-action")
@@ -181,6 +183,7 @@
         window.location.href = '{:url("index/index")}';
     });
     Parsley.on('form:submit', function(e) {
+        $("#send-sub").attr("type", 'button');
         var formData = $('form').serializeObject();
         var error = '';
         if (error !== '') {
@@ -193,6 +196,8 @@
 
     function getTopicDetail()
     {
+        var index = layer.load(2);
+        // mask.show();
         var formData = {};
         formData['action_id'] = action_id;
         $.ajax({
@@ -201,10 +206,13 @@
             data: formData,
             url: "{:url('index/getTopicDetail')}",
             complete: function () {
-                // layer.close(index);
+                layer.close(index);
+                // mask.close();
             },
             success: function (res) {
                 if (res.code === 200) {
+                    layer.close(index);
+                    // mask.close();
                     var headerEle = "<div class=\"mui-card-header\" style=\"word-wrap:break-word;display: block;\"></div>";
                     var ele = '';
                     $.each(res.data.detail, function (key, value) {
@@ -216,6 +224,7 @@
                         }
                     });
                     $("#topic-detail").empty().append(headerEle).append(ele);
+                    $("#send-sub").attr("type", 'submit');
                 } else {
                     mui.alert(res.msg,'错误');
                 }
