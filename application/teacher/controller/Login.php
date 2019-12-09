@@ -133,14 +133,14 @@ class Login extends Controller
     public function getCharts(Request $request)
     {
         if ($request->isPost()) {
-            $grade = $request->param('grade', 0);
-            $class = $request->param('class', 0);
-            $topic = $request->param('topic', 0);
+            $grade = $request->param('grade');
+            $class = $request->param('class');
+            $topic = $request->param('topic');
 
             session("teacher_grade", $grade);
             session("teacher_class", $class);
             session("teacher_s_id", $topic);
-            if (empty($grade) || empty($class) || empty($topic)) {
+            if (empty($request->has("grade")) || empty($request->has("class")) || empty($request->has("topic"))) {
                 $errorMsg = "getCharts:errorMsg". 'grade:'.$grade.'，class:'.$class.'，topic:'.$topic;
                 return $this->responseToJson([],'请求参数错误，请联系管理员', 201);
             } else {
@@ -157,7 +157,7 @@ class Login extends Controller
                 $mainScore = CategoryModel::where("s_id", $topic)->alias("a")
                     ->leftJoin("t_special_topic b", "a.id=b.c_id")
                     ->leftJoin("t_special_topic_detail c", "b.id=c.t_id")
-                    ->field("max(c.score) as score")->group("c.t_id")->column("score");
+                    ->group("c.t_id")->column("max(c.score) as score", "c.t_id");
                 $mainScore = array_sum(array_filter($mainScore));
                 $good = $general = $pass = $fail = 0;
                 foreach ($score as $key=>$value) {

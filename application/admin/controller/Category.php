@@ -259,10 +259,12 @@ class Category extends Base
                                     if (empty($setIn3)) {
                                         $insertLevel4Data = [];
                                         $thisId3 = $topModel->insertGetId(['c_id'=>$thisId2, 't_parent_id'=>0, 'title'=> $value3]);
+                                        $score = 0;
                                         foreach ($content['level_4'][$key][$key2][$key3] as $key4 => $value4) {
                                             $insertNum++;
                                             $insertLevel4Data[] = [
                                                 't_id'=>$thisId3,
+                                                'score' => $score++,
                                                 'content'=> $value4
                                             ];
                                         }

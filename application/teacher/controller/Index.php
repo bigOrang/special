@@ -112,6 +112,10 @@ class Index extends Base
             }
             $topicId = $request->param("topic_id", null);
             $allCategory = $categoryModel->where("parent_id", 0)->where("s_id", $sId)->field("title,id,s_id")->select();
+            $allCategory = json_decode(json_encode($allCategory, 320), true);
+            if (empty($allCategory)) {
+                exit($this->alertInfo('当前测评无试题'));
+            }
             foreach ($allCategory as $key=>$value) {
                 $topicDetail = $categoryModel->alias("a")->where("a.parent_id", $value['id'])
                     ->leftJoin("t_special_topic b", "a.id=b.c_id")->column("b.id");
@@ -124,7 +128,6 @@ class Index extends Base
 
             }
             $action = is_null($topicId) || empty($topicId) ? $allCategory[0]['child'][0] : $topicId;
-            $allCategory = json_decode(json_encode($allCategory, 320), true);
             $batArray = $allCategory;
             $endArray = array_pop($batArray);
             $this->assign("topics", $allCategory);
