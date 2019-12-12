@@ -1,0 +1,252 @@
+{extend name="common/form"/}
+{block name="link"}
+<link href="__STATIC__/css/plugins/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+<link href="__STATIC__/plugins/mui/css/mui.picker.css" rel="stylesheet">
+<link href="__STATIC__/plugins/mui/css/mui.picker.min.css" rel="stylesheet">
+<link href="__STATIC__/plugins/mui/css/mui.poppicker.css" rel="stylesheet">
+{/block}
+{block name="style"}
+<style>
+* {
+    touch-action: pan-y;
+}
+.main-advisory-content
+{   width: 95%;
+    overflow: hidden;/*超出部分隐藏*/
+    white-space: nowrap;/*不换行*/
+    text-overflow:ellipsis;/*超出部分文字以...显示*/
+}
+    #add_advisory {
+        border: 1px black;
+    }
+</style>
+{/block}
+{block name="body"}
+<div class="mui-off-canvas-wrap mui-draggable">
+    <!-- 主页面容器 -->
+    <div class="mui-inner-wrap">
+        <!-- 主页面标题 -->
+        <header class="mui-bar mui-bar-nav">
+            <div id="add_advisory">
+                <a class="mui-action-back mui-icon mui-icon-back mui-pull-left add-advisory"></a>
+            </div>
+            <h1 class="mui-title" id="title">外校学生测评</h1>
+        </header>
+        <!-- 主页面内容容器 -->
+        <div id="refreshContainer" class="mui-content mui-scroll-wrapper">
+            <div class="mui-scroll">
+                <form>
+                    <div class="mui-input-row mui-search" id="input-search">
+                        <input type="search" id="search" class="mui-input-clear" placeholder="搜索"  autocomplete="off">
+                    </div>
+                </form>
+                <!-- 主界面具体展示内容 -->
+                <ul class="mui-table-view mui-table-view-chevron" id="main-content">
+                </ul>
+            </div>
+        </div>
+        <div class="mui-content mui-scroll-wrapper">
+            <div class="mui-scroll">
+                <!-- 主界面具体展示内容 -->
+                <form class="mui-input-group" data-parsley-validate="">
+                    <div class="mui-input-row">
+                        <label>学校名称 <span style="color: red">*</span></label>
+                        <input type="text" name="school_name" class="mui-input-clear mui-col-sm-3" maxlength="50" placeholder="请输入学校名称" autocomplete="off">
+                    </div>
+                    <div class="mui-input-row">
+                        <label>年级 <span style="color: red">*</span></label>
+                        <input type="text" name="grade" class="mui-input-clear mui-col-sm-3" maxlength="50" placeholder="请输入年级" autocomplete="off">
+                    </div>
+                    <div class="mui-input-row">
+                        <label>班级 <span style="color: red">*</span></label>
+                        <input type="text" name="class" class="mui-input-clear mui-col-sm-3" maxlength="50" placeholder="请输入班级" autocomplete="off">
+                    </div>
+                    <div class="mui-input-row">
+                        <label>试卷 <span style="color: red">*</span></label>
+                        <input type="hidden" name="topic" id="topic">
+                        <input type="text" id='topicPicker' class="mui-input-clear mui-col-sm-3" placeholder="请选择试卷" autocomplete="off" readonly>
+                    </div>
+                    <div class="mui-input-row">
+                        <label>学生姓名 <span style="color: red">*</span></label>
+                        <input type="text" name="student_name" class="mui-input-clear mui-col-sm-3" placeholder="请输入学生姓名" autocomplete="off">
+                    </div>
+                    <div class="mui-input-row">
+                        <label>身份证号 <span style="color: red">*</span></label>
+                        <input type="text" name="id_card" class="mui-input-clear mui-col-sm-3" placeholder="请输入身份证号" autocomplete="off">
+                    </div>
+                    <div class="mui-input-row">
+                        <label>年龄</label>
+                        <input type="number" name="age" class="mui-input-clear mui-col-sm-3" placeholder="请输入年龄" autocomplete="off">
+                    </div>
+                    <div class="mui-input-row">
+                        <label>性别</label>
+                        <input type="hidden" name="gender" id="gender">
+                        <input type="text" id='genderPicker' class="mui-input-clear mui-col-sm-3" placeholder="请选择性别" autocomplete="off" readonly>
+                    </div>
+                    <div class="mui-input-row">
+                        <label>出生日期</label>
+                        <input type="hidden" name="birthday" id="birthday">
+                        <input type="text" id='showBirthday' data-options='{"type":"date"}' class="mui-input-clear mui-col-sm-3" placeholder="请选择性别" autocomplete="off" readonly>
+                    </div>
+                    <div class="mui-input-row">
+                        <label>家长姓名</label>
+                        <input type="text" name="parent_name" class="mui-input-clear mui-col-sm-3" placeholder="请输入家长姓名" autocomplete="off">
+                    </div>
+                    <div class="mui-input-row">
+                        <label>家长电话</label>
+                        <input type="tel" name="parent_phone" class="mui-input-clear mui-col-sm-3" placeholder="请输入家长电话" autocomplete="off">
+                    </div>
+                    <div class="mui-button-row">
+                        <input type="hidden" value="{$genderData}" id="genderData">
+                        <input type="hidden" value="{$topicData}" id="topicData">
+                        <button type="submit" class="mui-btn mui-btn-primary" >开始测评</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="mui-off-canvas-backdrop"></div>
+    </div>
+</div>
+{/block}
+{block name="script"}
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.picker.js"></script>
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.picker.min.js"></script>
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/mui.poppicker.js"></script>
+<script>
+    var formData = {};
+    jQuery(document).ready(function () {
+        mui.init();
+        mui('.mui-input-row input').input();
+        mui('#add_advisory').on('tap','a',function(){
+            document.location.href = '{:url("login/index")}';
+            return false;
+        });
+    });
+
+    Parsley.on('form:submit', function(e) {
+        formData = $('form').serializeObject();
+        var error = '';
+        console.log('formdata', formData)
+        if (formData.school_name === '') {
+            error = '请输入学校名称';
+        }
+        if (formData.grade === '') {
+            error = '请输入年级';
+        }
+        if (formData.class === '') {
+            error = '请输入班级';
+        }
+        if (formData.topic === '' ) {
+            error = '请选择【试卷】选项';
+        }
+        if (formData.student_name === '' ) {
+            error = '请输入学生姓名';
+        }
+        if (formData.id_card === '' ) {
+            error = '请输入学生身份证号码';
+        }
+        if (error !== '') {
+            mui.alert(error, '哎呀，出错了');
+            return false;
+        }
+        return ajaxPost(formData);
+    });
+    function ajaxPost(formData) {
+        var index = layer.load(2);
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            data: formData,
+            url: "{:url('login/setOtherGrade')}",
+            complete: function () {
+                layer.close(index);
+            },
+            success: function (res) {
+                if (res.code === 200) {
+                    var url = "{:url('index/other_edit',array('id'=>'P_id'))}";
+                    url = url.replace("P_id", formData.id_card);
+                    window.location.href = url;
+                } else {
+                    mui.alert('获取数据错误', '哎呀，出错了');
+                }
+            },
+            error: function (xhr) {
+                mui.alert('操作失败，请联系管理员', '哎呀，出错了');
+            }
+        });
+        return false;
+    }
+</script>
+<script>
+    var genderData;
+    var topicData;
+    (function($){
+        $(document).ready(function(){
+            topicData = $("#topicData").val();
+            genderData = $("#genderData").val();
+            topicData = eval('(' + topicData + ')');
+            genderData = eval('(' + genderData + ')');
+        });
+    })(jQuery);
+    (function($, doc) {
+        $.init();
+        $.ready(function() {
+            //普通示例
+            var topicPicker = new $.PopPicker();
+            topicPicker.setData(topicData);
+            var topicPickerButton = doc.getElementById("topicPicker");
+            var topic = doc.getElementById("topic");
+            topicPickerButton.addEventListener('tap', function(event) {
+                topicPicker.show(function(items) {
+                    topicPickerButton.value = items[0].text;
+                    topic.value = items[0].value;
+                    //返回 false 可以阻止选择框的关闭
+                    //return false;
+                });
+            }, false);
+            //-----------------------------------------
+            var genderPicker = new $.PopPicker();
+            genderPicker.setData(genderData);
+            var genderPickerButton = doc.getElementById("genderPicker");
+            var gender = doc.getElementById("gender");
+            genderPickerButton.addEventListener('tap', function(event) {
+                genderPicker.show(function(items) {
+                    genderPickerButton.value = items[0].text;
+                    gender.value = items[0].value;
+                    //返回 false 可以阻止选择框的关闭
+                    //return false;
+                });
+            }, false);
+            //-----------------------------------------
+            var showSTime = doc.getElementById("showBirthday");
+            var birthday = doc.getElementById("birthday");
+            showSTime.addEventListener('tap', function () {
+                var _self = this;
+                var options = {};
+                var year = new Date().getFullYear() ;
+                var month = new Date().getMonth();
+                var day = new Date().getDate();
+                options['type'] = 'date';
+                options['beginDate'] =  new Date(1950, 1, 1);
+                options['endDate'] =  new Date(year, month, day+1);
+                var id = this.getAttribute('id');
+                _self.picker = new $.DtPicker(options);
+                _self.picker.show(function(rs) {
+                    /*
+                     * rs.value 拼合后的 value
+                     * rs.text 拼合后的 text
+                     * rs.y 年，可以通过 rs.y.vaue 和 rs.y.text 获取值和文本
+                     * rs.m 月，用法同年
+                     * rs.d 日，用法同年
+                     * rs.h 时，用法同年
+                     * rs.i 分（minutes 的第二个字母），用法同年
+                     */
+                    birthday.value= rs.value;
+                    showSTime.value= rs.value;
+                });
+            }, false);
+            //-----------------------------------------
+        });
+    })(mui, document);
+</script>
+{/block}

@@ -28,9 +28,9 @@
         <!-- 主页面标题 -->
         <header class="mui-bar mui-bar-nav">
             <div id="add_advisory">
-                <a class="mui-action-back mui-icon iconfont icon-tuichu mui-pull-left add-advisory"></a>
+                <a class="mui-action-back mui-icon mui-icon-back mui-pull-left add-advisory"></a>
             </div>
-            <h1 class="mui-title" id="title">学生考核</h1>
+            <h1 class="mui-title" id="title">[外校]学生考核</h1>
             <a style="width:10%; margin:0px;float: right;" href="#popover" id="openPopover" class="mui-icon iconfont icon-shaixuan"></a>
         </header>
         <!-- 主页面内容容器 -->
@@ -38,7 +38,7 @@
             <div class="mui-scroll">
                 <form>
                     <div class="mui-input-row mui-search" id="input-search">
-                        <input type="search" id="search" name="search" class="mui-input-clear" placeholder="搜索"  autocomplete="off" style="margin-bottom:0px;">
+                        <input type="search" id="search" class="mui-input-clear" placeholder="搜索"  autocomplete="off" style="margin-bottom:0px;">
                     </div>
                 </form>
                 <!-- 主界面具体展示内容 -->
@@ -99,7 +99,7 @@
            document.location.href = this.href;
         });
         mui('#add_advisory').on('tap','a',function(){
-            document.location.href = "{:url('login/index')}";
+            document.location.href = "{:url('login/chooseOtherEchart')}";
             return false;
         });
 
@@ -148,11 +148,12 @@
     function ajaxPost(formData) {
         // var index = layer.load(2);
         formData['category'] = category;
+        formData['is_other'] = 1;
         $.ajax({
             type: 'post',
             dataType: 'json',
             data: formData,
-            url: "{:url('index/getStudentList')}",
+            url: "{:url('index/getOtherStudentList')}",
             complete: function () {
                 // layer.close(index);
             },
@@ -165,18 +166,16 @@
                         var url = "";
                         if (val.is_over !== '已填写') {
                             ele = '<span class="mui-badge mui-badge-red">'+ val.is_over +'</span>\n';
-                            url = "{:url('index/edit',array('id'=>'P_id'))}";
+                            url = "{:url('index/other_edit',array('id'=>'P_id'))}";
                         } else {
                             ele = '<span class="mui-badge mui-badge-success">'+ val.is_over +'</span>\n';
-                            url = "{:url('index/detail',array('id'=>'P_id'))}";
+                            url = "{:url('index/other_detail',array('id'=>'P_id'))}";
                         }
-                        url = url.replace("P_id", val.code);
+                        url = url.replace("P_id", val.id_card);
                         $("#main-content").append('<li class="mui-table-view-cell">\n' +
                             '<a class="mui-navigate-right" href="'+ url +'">\n' +
-                            '<div class="mui-media-body main-advisory-content">\n 「' +
-                            val.code+
-                            '」'+
-                            val.name+
+                            '<div class="mui-media-body main-advisory-content">\n ' +
+                            val.student_name+
                             // '<p class=\'mui-ellipsis-2\' style="margin-top: 5px;">&emsp;创建时间：'+ val.created_at +'</p>\n' +
                             '</div>\n' +
                             ele +

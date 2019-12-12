@@ -24,6 +24,7 @@ class Base extends Controller
             session('teacher_school_id', $school_id);
             session('teacher_client_id', $client_id);
             session('teacher_auth_status',1);
+            session('teacher_is_login',1);
         } else {
             if (empty(session('teacher_auth_status'))) {
                 exit($this->fetch('./403',[

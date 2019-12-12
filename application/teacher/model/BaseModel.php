@@ -3,6 +3,7 @@
 namespace app\teacher\model;
 
 use think\Db;
+use think\facade\Log;
 use think\Model;
 
 class BaseModel extends Model

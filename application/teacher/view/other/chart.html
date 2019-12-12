@@ -32,17 +32,18 @@
             <div id="add_advisory">
                 <a class="mui-action-back mui-icon mui-icon-back mui-pull-left add-advisory"></a>
             </div>
-            <h1 class="mui-title" id="title">测评统计</h1>
+            <h1 class="mui-title" id="title">外校测评统计</h1>
         </header>
         <div class="mui-content mui-scroll-wrapper">
             <div class="mui-scroll">
                 <!-- 主界面具体展示内容 -->
                 <form class="mui-input-group" data-parsley-validate="">
                     <div class="mui-input-row">
-                        <label>年级/班级</label>
+                        <label>选择班级</label>
                         <input type="hidden" name="grade" id="grade">
                         <input type="hidden" name="class" id="class">
-                        <input type="text" id='gradePicker' class="mui-input-clear mui-col-sm-3" placeholder="请选择年级 / 班级" readonly autocomplete="off">
+                        <input type="hidden" name="school" id="school">
+                        <input type="text" id='schoolPicker' class="mui-input-clear mui-col-sm-3" placeholder="请选择学校/年级/班级" readonly autocomplete="off">
                     </div>
                     <div class="mui-input-row">
                         <label>试卷</label>
@@ -51,7 +52,7 @@
                     </div>
 
                     <div class="mui-button-row" style="width: 90%;margin: 0 auto;">
-                        <input type="hidden" value="{$gradeData}" id="gradeData">
+                        <input type="hidden" value="{$schoolData}" id="schoolData">
                         <input type="hidden" value="{$topicData}" id="topicData">
                         <button type="submit" class="mui-btn mui-btn-success mui-btn-block" style="line-height: 0px;">搜索</button>
                     </div>
@@ -76,7 +77,7 @@
         mui.init();
 
         mui('.title').on('tap','a',function(){
-            var url = "{:url('index/index')}";
+            var url = "{:url('index/other_index')}";
             document.location.href = url;
             return false;
         });
@@ -89,8 +90,8 @@
     Parsley.on('form:submit', function(e) {
         formData = $('form').serializeObject();
         var error = '';
-        if (formData.grade === '' || formData.class === '' ) {
-            error = '请选择【年级/班级】选项';
+        if (formData.grade === '' || formData.class === ''  || formData.school === '' ) {
+            error = '请选择【学校/年级/班级】选项';
         }
         if (formData.topic === '' ) {
             error = '请选择【试卷】选项';
@@ -108,7 +109,7 @@
             type: 'post',
             dataType: 'json',
             data: formData,
-            url: "{:url('login/getCharts')}",
+            url: "{:url('login/getOtherCharts')}",
             complete: function () {
                 layer.close(index);
             },
@@ -128,14 +129,14 @@
     }
 </script>
 <script>
-    var setData;
+    var schoolData;
     var topicData;
     (function($){
         $(document).ready(function(){
-            setData = $("#gradeData").val();
-            setData = eval('(' + setData + ')');
             topicData = $("#topicData").val();
             topicData = eval('(' + topicData + ')');
+            schoolData = $("#schoolData").val();
+            schoolData = eval('(' + schoolData + ')');
         });
     })(jQuery);
     (function($, doc) {
@@ -156,40 +157,26 @@
                 });
             }, false);
             //-----------------------------------------
-            //级联示例
-           var gradePicker = new $.PopPicker({
-               layer: 2
+            //     //级联示例
+           var schoolInfoPicker3 = new $.PopPicker({
+               layer: 3
            });
-           gradePicker.setData(setData);
-           var gradePickerButton = doc.getElementById('gradePicker');
-           var grade = doc.getElementById('grade');
+           schoolInfoPicker3.setData(schoolData);
+           var schoolPickerButton = doc.getElementById('schoolPicker');
            var class_ = doc.getElementById('class');
-           gradePickerButton.addEventListener('tap', function(event) {
-               gradePicker.show(function(items) {
-                   console.log('item', items);
-                   gradePickerButton.value = items[0].text + items[1].text;
-                   htmlS +=  items[0].text + items[1].text;
-                   grade.value = items[0].value
-                   class_.value = items[1].value
+           var grade_ = doc.getElementById('grade');
+           var school_ = doc.getElementById('school');
+            schoolPickerButton.addEventListener('tap', function(event) {
+               schoolInfoPicker3.show(function(items) {
+                   school_.value = items[0].value;
+                   grade_.value = items[1].value;
+                   class_.value = items[2].value;
+                   htmlS = items[0].text + " " + items[1].text + " " + items[2].text;
+                   schoolPickerButton.value = htmlS;
                    //返回 false 可以阻止选择框的关闭
                    //return false;
                });
            }, false);
-            //-----------------------------------------
-            //     //级联示例
-//            var cityPicker3 = new $.PopPicker({
-//                layer: 3
-//            });
-//            cityPicker3.setData(cityData3);
-//            var showCityPickerButton = doc.getElementById('showCityPicker3');
-//            var cityResult3 = doc.getElementById('cityResult3');
-//            showCityPickerButton.addEventListener('tap', function(event) {
-//                cityPicker3.show(function(items) {
-//                    cityResult3.innerText = "你选择的城市是:" + (items[0] || {}).text + " " + (items[1] || {}).text + " " + (items[2] || {}).text;
-//                    //返回 false 可以阻止选择框的关闭
-//                    //return false;
-//                });
-//            }, false);
         });
     })(mui, document);
 </script>

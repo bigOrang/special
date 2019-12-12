@@ -1,0 +1,282 @@
+{extend name="common/form"/}
+{block name="link"}
+<link href="__STATIC__/js/plugins/multiselect/css/multi-select.css"  rel="stylesheet" type="text/css" />
+{/block}
+{block name="style"}
+<style>
+    /*高仿Html5自带的验证提示*/
+    .parsley-errors-list li{
+        position: fixed;
+        border: 1px solid #f0f0f0;
+        border-radius: 5px;
+        padding: 5px;
+        background-color: white;
+        z-index: 99999;
+        font-size: 14px;
+        color: #282828;
+        box-shadow: 0 0 20px #282828;
+    }
+
+    .parsley-errors-list li:after {
+        content: "";
+        position: absolute;
+        top: -8px;
+        left: 10px;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 8px solid white;
+    }
+
+    .parsley-errors-list li:after {
+        content: "";
+        position: absolute;
+        top: -8px;
+        left: 10px;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 8px solid white;
+    }
+
+    .parsley-errors-list li:before {
+        content: "!";
+        display: inline-block;
+        background-color: rgb(250,168,50);
+        font-size: 16px;
+        width: 18px;
+        height: 18px;
+        line-height: 18px;
+        color: white;
+        border-radius: 2px;
+        text-align: center;
+        margin-right: 5px;
+        vertical-align: middle;
+    }
+
+    .parsley-errors-list li {
+        display: inline-block;
+        vertical-align: top;
+        line-height: 18px;
+    }
+    .parsley-errors-list {
+        margin: 0px;
+    }
+
+    .mui-radio input[type=radio]:checked:before {content: '\e442';}
+
+    #topic-menu-list .mui-scroll {
+        margin-left: 1%;
+        padding-bottom: 5%;
+    }
+    #topic-menu-list .mui-scroll:before {
+        content: "";
+        display: block;
+    }
+    #topic-menu-list .mui-scroll:after {
+        content: "";
+        display: block;
+    }
+    #topic-menu-list .mui-scroll button {
+        border-radius: 50%;
+        margin: 2px 0px;
+        width:40px;
+        height:40px;
+    }
+    label {
+        margin-top:5px;
+    }
+</style>
+{/block}
+{block name="body"}
+<!--mui标题-->
+<header class="mui-bar mui-bar-nav">
+    <a class="mui-icon mui-action-menu mui-icon-back mui-pull-left" id="go-back"></a>
+    <h1 class="mui-title">『评测』{$title}</h1>
+    <a class="mui-icon mui-action-menu mui-icon-bars mui-pull-right" id="topic-menu"></a>
+</header>
+<!--mui内容-->
+<div class="mui-content mui-scroll-wrapper">
+    <div class="mui-scroll">
+        <form data-parsley-validate="">
+            <div class="mui-card" id="topic-detail">
+            </div>
+            <div class="mui-card">
+                <div class="mui-button-row" style="padding-bottom: 5px;">
+                    <button type="submit" id="send-sub" class="mui-btn mui-btn-primary">下一题</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div id="topic-menu-list" class="mui-scroll-wrapper mui-popover" style="display: none;top: 25%;height: 75%;width: 100%;">
+    <div class="mui-scroll" style="position: inherit;top: 20px;">
+        <div>
+            {foreach $topics as $key=>$value}
+            <label for="">第{$key+1}章：{$value.title}</label>
+            <div>
+                {foreach $value['child'] as $list=>$info}
+                {if in_array($info, $value['select'])}
+                    <button type="button" data-action="{$info}" data-is-reply="1" class="mui-btn mui-btn-primary mui-btn-self-radio btn-jump">{$list+1}</button>
+                {else}
+                    <button type="button" data-action="{$info}" data-is-reply="0" class="mui-btn mui-btn-self-radio btn-jump">{$list+1}</button>
+                {/if}
+                {/foreach}
+            </div>
+            {/foreach}
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name="script"}
+<script type="text/javascript" src="__STATIC__/js/plugins/multiselect/js/jquery.multi-select.js"></script>
+<script type="text/javascript" src="__STATIC__/js/plugins/jquery-quicksearch/jquery.quicksearch.js"></script>
+<script type="text/javascript" src="__STATIC__/js/plugins/validate/jquery.validate.min.js"></script>
+<script type="text/javascript" src="__STATIC__/js/plugins/validate/messages_zh.min.js"></script>
+<script type="text/javascript" src="__STATIC__/plugins/mui/js/common.js"></script>
+<script>
+    var action_id = '{$action}';
+    var end_action_id = '{$end_action}';
+    // var mask;
+    jQuery(document).ready(function () {
+        mui.init();
+        mui('.mui-scroll-wrapper').scroll({
+            deceleration: 0.0005 //flick 减速系数，系数越大，滚动速度越慢，滚动距离越小，默认值0.0006
+        });
+        // mask = mui.createMask();//callback为用户点击蒙版时自动执行的回调；
+        getTopicDetail();
+        $("#topic-menu-list .mui-scroll").find("button").each(function () {
+            var actionId = $(this).attr("data-action")
+            if (actionId == action_id) {
+                $(this).addClass("mui-btn-success")
+            }
+        })
+    });
+
+    (function($, $$) {
+        var menuClick = document.getElementById("topic-menu");
+        var mask = mui.createMask(function () {
+
+        });
+        menuClick.addEventListener('tap',function(){
+            mui('#topic-menu-list').popover('toggle');
+        });
+    })(mui, jQuery);
+
+
+    (function($, $$) {
+        $$(".btn-jump").click(function () {
+            action_id = $$(this).attr("data-action");
+            $$(this).addClass("mui-btn-success")
+            $$(".btn-jump").not($$(this)).removeClass("mui-btn-success");
+            var buttonEle = $$('#topic-menu-list').find('.mui-scroll');
+            var is_reply = buttonEle.find('button[data-is-reply="1"]').length;
+            var is_all   = buttonEle.find("button").length;
+            if (is_all - is_reply == 1) {
+                $$("button[type='submit']").html('提交完成测试')
+            }
+            getTopicDetail();
+        })
+    })(mui, jQuery);
+
+    var click = document.getElementById("go-back");
+    click.addEventListener('tap',function(){
+        window.location.href = '{:url("index/other_index")}';
+    });
+    Parsley.on('form:submit', function(e) {
+        $("#send-sub").attr("type", 'button');
+        var formData = $('form').serializeObject();
+        var error = '';
+        if (error !== '') {
+            mui.alert(error, '哎呀，出错了', function() {
+            });
+            return false;
+        }
+        return ajaxPost(formData);
+    });
+
+    function getTopicDetail()
+    {
+        var index = layer.load(2);
+        // mask.show();
+        var formData = {};
+        formData['action_id'] = action_id;
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            data: formData,
+            url: "{:url('index/getOtherTopicDetail')}",
+            complete: function () {
+                layer.close(index);
+                // mask.close();
+            },
+            success: function (res) {
+                if (res.code === 200) {
+                    layer.close(index);
+                    // mask.close();
+                    var headerEle = "<div class=\"mui-card-header\" style=\"word-wrap:break-word;display: block;\"></div>";
+                    var ele = '';
+                    $.each(res.data.detail, function (key, value) {
+                        headerEle = $(headerEle).html(value.question_name);
+                        if (res.data.select !== null && res.data.select === value.id) {
+                            ele += "<div class=\"mui-input-row mui-radio mui-left\"><label>"+ value.content +"</label><input name='radio["+value.t_id+"]' type='radio' style='margin: 0px;' checked required value='"+value.id+"'></div>";
+                        } else {
+                            ele += "<div class=\"mui-input-row mui-radio mui-left\"><label>"+ value.content +"</label><input name='radio["+value.t_id+"]' type='radio' style='margin: 0px;' required value='"+value.id+"'></div>";
+                        }
+                    });
+                    $("#topic-detail").empty().append(headerEle).append(ele);
+                    $("#send-sub").attr("type", 'submit');
+                } else {
+                    mui.alert(res.msg,'错误');
+                }
+            },
+            error: function (xhr) {
+                mui.alert('操作失败，请联系管理员','错误');
+            }
+        });
+        return false;
+    }
+
+    function ajaxPost(formData) {
+        // var index = layer.load(2);
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            data: formData,
+            url: "{:url('index/other_edit')}",
+            complete: function () {
+                // layer.close(index);
+            },
+            success: function (res) {
+                if (res.code === 200) {
+                    var buttonEle = $('#topic-menu-list').find('.mui-scroll');
+                    buttonEle.find('button[data-action="'+ action_id +'"]').attr("data-is-reply", "1")
+                    var is_reply = buttonEle.find('button[data-is-reply="1"]').length;
+                    var is_all   = buttonEle.find("button").length;
+                    if (is_all - is_reply == 1) {
+                        $("button[type='submit']").html('提交完成测试')
+                    }
+                    if (is_reply < is_all) {
+                        buttonEle.find('button[data-action="'+ action_id +'"]').addClass("mui-btn-primary");
+                        console.log('action_id-old', action_id)
+                        action_id = buttonEle.find('button[data-is-reply="0"]').eq(0).attr("data-action");
+                        var $curDd = buttonEle.find('button[data-action="'+ action_id +'"]');
+                        $curDd.addClass("mui-btn-success")
+                        $(".btn-jump").not('button[data-action="'+ action_id +'"]').removeClass("mui-btn-success");
+                        console.log('action_id-new', action_id)
+                        getTopicDetail();
+                    } else {
+                        //jump()
+                        window.location.href = "{:url('index/other_choose')}";
+                    }
+                } else {
+                    mui.alert('获取数据错误','错误');
+                }
+            },
+            error: function (xhr) {
+                mui.alert('操作失败，请联系管理员','错误');
+            }
+        });
+        return false;
+    }
+</script>
+{/block}

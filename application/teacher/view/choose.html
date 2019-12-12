@@ -22,8 +22,10 @@
         <div class="mui-content mui-scroll-wrapper">
             <div style="margin-top: 150px;"></div>
             <div style="width: 90%;margin: 0 auto;">
-                <button type="button" id="assess" class="mui-btn mui-btn-primary mui-btn-block">学生测评</button>
-                <button type="button" id="e-chart" class="mui-btn mui-btn-royal mui-btn-block">测评统计</button>
+                <button type="button" id="assess" class="mui-btn mui-btn-primary mui-btn-block">本校学生测评</button>
+                <button type="button" id="e-chart" class="mui-btn mui-btn-royal mui-btn-block">本校测评统计</button>
+                <button type="button" id="other-assess" class="mui-btn mui-btn-success mui-btn-block">外校学生测评</button>
+                <button type="button" id="other-e-chart" class="mui-btn mui-btn-danger mui-btn-block">外校测评统计</button>
             </div>
         </div>
     </div>
@@ -41,6 +43,12 @@
         });
         $("#e-chart").click(function () {
             document.location.href = "{:url('login/chooseEchart')}";
+        });
+        $("#other-assess").click(function () {
+            document.location.href = "{:url('login/chooseOtherAssess')}";
+        });
+        $("#other-e-chart").click(function () {
+            document.location.href = "{:url('login/chooseOtherEchart')}";
         });
     });
 

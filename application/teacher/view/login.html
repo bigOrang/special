@@ -52,12 +52,12 @@
                         <label>年级/班级 <span style="color: red">*</span></label>
                         <input type="hidden" name="grade" id="grade">
                         <input type="hidden" name="class" id="class">
-                        <input type="text" id='gradePicker' class="mui-input-clear mui-col-sm-3" placeholder="请选择班级">
+                        <input type="text" id='gradePicker' class="mui-input-clear mui-col-sm-3" placeholder="请选择班级" autocomplete="off">
                     </div>
                     <div class="mui-input-row">
                         <label>试卷 <span style="color: red">*</span></label>
                         <input type="hidden" name="topic" id="topic">
-                        <input type="text" id='topicPicker' class="mui-input-clear mui-col-sm-3" placeholder="请选择试卷">
+                        <input type="text" id='topicPicker' class="mui-input-clear mui-col-sm-3" placeholder="请选择试卷" autocomplete="off">
                     </div>
                     <div class="mui-button-row">
                         <input type="hidden" value="{$gradeData}" id="gradeData">
@@ -79,6 +79,10 @@
     var formData = {};
     jQuery(document).ready(function () {
         mui.init();
+        mui('#add_advisory').on('tap','a',function(){
+            document.location.href = '{:url("login/index")}';
+            return false;
+        });
     });
 
     Parsley.on('form:submit', function(e) {
